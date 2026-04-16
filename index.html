@@ -1,0 +1,1261 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>HAR → Postman | Augmont API Tools</title>
+<link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;600;700;800&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/crypto-js/4.1.1/crypto-js.min.js"></script>
+<style>
+  :root {
+    --bg: #0a0a0f;
+    --surface: #111118;
+    --surface2: #1a1a24;
+    --border: #2a2a3a;
+    --accent: #f5a623;
+    --accent2: #e8882a;
+    --text: #e8e8f0;
+    --muted: #6b6b80;
+    --success: #4ade80;
+    --error: #f87171;
+    --folder-colors: #6366f1, #06b6d4, #10b981, #f59e0b, #ec4899, #8b5cf6;
+  }
+
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: 'Syne', sans-serif;
+    min-height: 100vh;
+    overflow-x: hidden;
+  }
+
+  /* Background grid */
+  body::before {
+    content: '';
+    position: fixed;
+    inset: 0;
+    background-image:
+      linear-gradient(rgba(245,166,35,0.03) 1px, transparent 1px),
+      linear-gradient(90deg, rgba(245,166,35,0.03) 1px, transparent 1px);
+    background-size: 40px 40px;
+    pointer-events: none;
+    z-index: 0;
+  }
+
+  .container {
+    max-width: 900px;
+    margin: 0 auto;
+    padding: 0 24px;
+    position: relative;
+    z-index: 1;
+  }
+
+  /* Header */
+  header {
+    padding: 48px 0 40px;
+    border-bottom: 1px solid var(--border);
+  }
+
+  .logo-row {
+    display: flex;
+    align-items: center;
+    gap: 16px;
+    margin-bottom: 12px;
+  }
+
+  .logo-badge {
+    background: var(--accent);
+    color: #000;
+    font-size: 11px;
+    font-weight: 700;
+    letter-spacing: 0.1em;
+    padding: 4px 10px;
+    border-radius: 4px;
+  }
+
+  .tool-label {
+    color: var(--muted);
+    font-size: 12px;
+    font-family: 'JetBrains Mono', monospace;
+    letter-spacing: 0.05em;
+  }
+
+  h1 {
+    font-size: clamp(28px, 5vw, 44px);
+    font-weight: 800;
+    line-height: 1.1;
+    letter-spacing: -0.02em;
+  }
+
+  h1 span {
+    color: var(--accent);
+  }
+
+  .subtitle {
+    color: var(--muted);
+    font-size: 15px;
+    margin-top: 10px;
+    font-weight: 400;
+  }
+
+  /* Main card */
+  .card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 16px;
+    padding: 32px;
+    margin: 32px 0;
+    position: relative;
+    overflow: hidden;
+  }
+
+  .card::before {
+    content: '';
+    position: absolute;
+    top: 0; left: 0; right: 0;
+    height: 2px;
+    background: linear-gradient(90deg, var(--accent), transparent);
+  }
+
+  .section-label {
+    font-size: 11px;
+    font-weight: 700;
+    letter-spacing: 0.12em;
+    color: var(--accent);
+    text-transform: uppercase;
+    margin-bottom: 16px;
+  }
+
+  /* URL inputs */
+  .url-row {
+    display: flex;
+    gap: 10px;
+    margin-bottom: 10px;
+    align-items: center;
+  }
+
+  .url-input {
+    flex: 1;
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 12px 16px;
+    color: var(--text);
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 13px;
+    outline: none;
+    transition: border-color 0.2s;
+  }
+
+  .url-input:focus {
+    border-color: var(--accent);
+  }
+
+  .url-input::placeholder { color: var(--muted); }
+
+  .url-tag {
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    padding: 4px 10px;
+    font-size: 11px;
+    font-family: 'JetBrains Mono', monospace;
+    color: var(--accent);
+    white-space: nowrap;
+  }
+
+  .btn-icon {
+    background: transparent;
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    width: 40px;
+    height: 40px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    color: var(--muted);
+    font-size: 18px;
+    transition: all 0.2s;
+    flex-shrink: 0;
+  }
+
+  .btn-icon:hover { border-color: var(--error); color: var(--error); }
+
+  .add-url-btn {
+    background: transparent;
+    border: 1px dashed var(--border);
+    border-radius: 8px;
+    padding: 10px 16px;
+    color: var(--muted);
+    font-family: 'Syne', sans-serif;
+    font-size: 13px;
+    cursor: pointer;
+    width: 100%;
+    text-align: left;
+    transition: all 0.2s;
+    margin-top: 4px;
+  }
+
+  .add-url-btn:hover { border-color: var(--accent); color: var(--accent); }
+
+  /* Drop zone */
+  .drop-zone {
+    border: 2px dashed var(--border);
+    border-radius: 12px;
+    padding: 48px 32px;
+    text-align: center;
+    cursor: pointer;
+    transition: all 0.25s;
+    position: relative;
+    background: var(--surface2);
+  }
+
+  .drop-zone:hover, .drop-zone.dragover {
+    border-color: var(--accent);
+    background: rgba(245,166,35,0.04);
+  }
+
+  .drop-zone.has-file {
+    border-color: var(--success);
+    border-style: solid;
+    background: rgba(74,222,128,0.04);
+  }
+
+  .drop-icon {
+    font-size: 40px;
+    margin-bottom: 16px;
+    display: block;
+  }
+
+  .drop-title {
+    font-size: 16px;
+    font-weight: 600;
+    margin-bottom: 6px;
+  }
+
+  .drop-sub {
+    font-size: 13px;
+    color: var(--muted);
+  }
+
+  .file-info {
+    display: none;
+    align-items: center;
+    gap: 12px;
+    justify-content: center;
+  }
+
+  .file-info.visible { display: flex; }
+
+  .file-name {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 13px;
+    color: var(--success);
+  }
+
+  .file-size {
+    font-size: 12px;
+    color: var(--muted);
+  }
+
+  .clear-file {
+    background: transparent;
+    border: none;
+    color: var(--muted);
+    cursor: pointer;
+    font-size: 16px;
+    padding: 4px;
+    transition: color 0.2s;
+  }
+
+  .clear-file:hover { color: var(--error); }
+
+  input[type="file"] { display: none; }
+
+  /* Options row */
+  .options-row {
+    display: flex;
+    gap: 12px;
+    flex-wrap: wrap;
+    margin-top: 8px;
+  }
+
+  .checkbox-label {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    cursor: pointer;
+    font-size: 13px;
+    color: var(--muted);
+    transition: color 0.2s;
+    user-select: none;
+  }
+
+  .checkbox-label:hover { color: var(--text); }
+
+  .checkbox-label input[type="checkbox"] {
+    display: none;
+  }
+
+  .custom-check {
+    width: 16px;
+    height: 16px;
+    border: 1px solid var(--border);
+    border-radius: 4px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: all 0.2s;
+    flex-shrink: 0;
+    font-size: 10px;
+  }
+
+  .checkbox-label input:checked + .custom-check {
+    background: var(--accent);
+    border-color: var(--accent);
+    color: #000;
+  }
+
+  /* Generate button */
+  .generate-btn {
+    width: 100%;
+    background: var(--accent);
+    color: #000;
+    border: none;
+    border-radius: 10px;
+    padding: 16px 32px;
+    font-family: 'Syne', sans-serif;
+    font-size: 15px;
+    font-weight: 700;
+    letter-spacing: 0.02em;
+    cursor: pointer;
+    transition: all 0.2s;
+    margin-top: 24px;
+    position: relative;
+    overflow: hidden;
+  }
+
+  .generate-btn:hover {
+    background: var(--accent2);
+    transform: translateY(-1px);
+    box-shadow: 0 8px 24px rgba(245,166,35,0.3);
+  }
+
+  .generate-btn:active { transform: translateY(0); }
+
+  .generate-btn:disabled {
+    opacity: 0.4;
+    cursor: not-allowed;
+    transform: none;
+    box-shadow: none;
+  }
+
+  /* Progress */
+  .progress-bar {
+    height: 3px;
+    background: var(--border);
+    border-radius: 2px;
+    margin-top: 16px;
+    overflow: hidden;
+    display: none;
+  }
+
+  .progress-bar.visible { display: block; }
+
+  .progress-fill {
+    height: 100%;
+    background: linear-gradient(90deg, var(--accent), var(--accent2));
+    border-radius: 2px;
+    width: 0%;
+    transition: width 0.4s ease;
+  }
+
+  .progress-text {
+    font-size: 12px;
+    font-family: 'JetBrains Mono', monospace;
+    color: var(--muted);
+    margin-top: 8px;
+    display: none;
+  }
+
+  .progress-text.visible { display: block; }
+
+  /* Results */
+  .results-card {
+    display: none;
+    background: var(--surface);
+    border: 1px solid var(--success);
+    border-radius: 16px;
+    padding: 32px;
+    margin-bottom: 32px;
+    position: relative;
+    overflow: hidden;
+    animation: slideUp 0.4s ease;
+  }
+
+  .results-card::before {
+    content: '';
+    position: absolute;
+    top: 0; left: 0; right: 0;
+    height: 2px;
+    background: linear-gradient(90deg, var(--success), transparent);
+  }
+
+  .results-card.visible { display: block; }
+
+  @keyframes slideUp {
+    from { opacity: 0; transform: translateY(20px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
+
+  .context-block {
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    border-left: 3px solid var(--accent);
+    border-radius: 8px;
+    padding: 16px 20px;
+    margin-bottom: 24px;
+    font-size: 14px;
+    line-height: 1.7;
+  }
+
+  .context-block strong {
+    color: var(--accent);
+  }
+
+  /* Summary table */
+  .summary-table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 13px;
+    margin-bottom: 24px;
+  }
+
+  .summary-table th {
+    text-align: left;
+    padding: 10px 12px;
+    background: var(--surface2);
+    color: var(--muted);
+    font-size: 11px;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    border-bottom: 1px solid var(--border);
+  }
+
+  .summary-table td {
+    padding: 10px 12px;
+    border-bottom: 1px solid rgba(42,42,58,0.5);
+    vertical-align: middle;
+  }
+
+  .summary-table tr:last-child td { border-bottom: none; }
+  .summary-table tr:hover td { background: rgba(255,255,255,0.02); }
+
+  .method-badge {
+    display: inline-block;
+    padding: 2px 8px;
+    border-radius: 4px;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 11px;
+    font-weight: 500;
+  }
+
+  .method-GET    { background: rgba(74,222,128,0.15);  color: #4ade80; }
+  .method-POST   { background: rgba(96,165,250,0.15);  color: #60a5fa; }
+  .method-PUT    { background: rgba(251,191,36,0.15);  color: #fbbf24; }
+  .method-PATCH  { background: rgba(167,139,250,0.15); color: #a78bfa; }
+  .method-DELETE { background: rgba(248,113,113,0.15); color: #f87171; }
+
+  .folder-badge {
+    display: inline-block;
+    padding: 2px 8px;
+    border-radius: 4px;
+    font-size: 11px;
+    font-weight: 600;
+    background: rgba(245,166,35,0.15);
+    color: var(--accent);
+  }
+
+  .path-mono {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 12px;
+    color: var(--text);
+  }
+
+  .desc-text {
+    color: var(--muted);
+    font-size: 12px;
+  }
+
+  /* Download button */
+  .download-btn {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 10px;
+    width: 100%;
+    background: var(--success);
+    color: #000;
+    border: none;
+    border-radius: 10px;
+    padding: 16px 32px;
+    font-family: 'Syne', sans-serif;
+    font-size: 15px;
+    font-weight: 700;
+    cursor: pointer;
+    transition: all 0.2s;
+    text-decoration: none;
+  }
+
+  .download-btn:hover {
+    background: #22c55e;
+    transform: translateY(-1px);
+    box-shadow: 0 8px 24px rgba(74,222,128,0.3);
+  }
+
+  .stats-row {
+    display: flex;
+    gap: 24px;
+    margin-bottom: 20px;
+    flex-wrap: wrap;
+  }
+
+  .stat {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+  }
+
+  .stat-num {
+    font-size: 28px;
+    font-weight: 800;
+    color: var(--accent);
+    line-height: 1;
+  }
+
+  .stat-label {
+    font-size: 12px;
+    color: var(--muted);
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+  }
+
+  /* Error */
+  .error-block {
+    display: none;
+    background: rgba(248,113,113,0.1);
+    border: 1px solid rgba(248,113,113,0.3);
+    border-radius: 8px;
+    padding: 14px 18px;
+    font-size: 13px;
+    color: var(--error);
+    font-family: 'JetBrains Mono', monospace;
+    margin-top: 16px;
+  }
+
+  .error-block.visible { display: block; }
+
+  /* Footer */
+  footer {
+    border-top: 1px solid var(--border);
+    padding: 24px 0;
+    margin-top: 16px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    flex-wrap: gap;
+    gap: 12px;
+  }
+
+  .footer-note {
+    font-size: 12px;
+    color: var(--muted);
+    font-family: 'JetBrains Mono', monospace;
+  }
+
+  .footer-badge {
+    font-size: 11px;
+    color: var(--muted);
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 20px;
+    padding: 4px 12px;
+  }
+
+  /* Divider */
+  .divider {
+    height: 1px;
+    background: var(--border);
+    margin: 24px 0;
+  }
+
+  /* How-to section */
+  .how-to {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+    gap: 16px;
+    margin-top: 8px;
+  }
+
+  .step-item {
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 16px;
+  }
+
+  .step-num {
+    font-size: 11px;
+    font-weight: 700;
+    color: var(--accent);
+    letter-spacing: 0.1em;
+    margin-bottom: 6px;
+  }
+
+  .step-text {
+    font-size: 13px;
+    color: var(--muted);
+    line-height: 1.5;
+  }
+
+  @media (max-width: 600px) {
+    .card { padding: 20px; }
+    .url-row { flex-wrap: wrap; }
+    .summary-table { font-size: 12px; }
+  }
+</style>
+</head>
+<body>
+<div class="container">
+
+  <header>
+    <div class="logo-row">
+      <span class="logo-badge">AUGMONT</span>
+      <span class="tool-label">// api-tools / har-converter</span>
+    </div>
+    <h1>HAR → <span>Postman</span><br>Converter</h1>
+    <p class="subtitle">Export HAR from Chrome DevTools, drop it here, get a ready-to-import Postman collection with HMAC signatures.</p>
+  </header>
+
+  <!-- How to use -->
+  <div class="card" style="margin-top:32px;">
+    <div class="section-label">How to use</div>
+    <div class="how-to">
+      <div class="step-item">
+        <div class="step-num">STEP 01</div>
+        <div class="step-text">Open Chrome DevTools → Network tab → perform your API flow</div>
+      </div>
+      <div class="step-item">
+        <div class="step-num">STEP 02</div>
+        <div class="step-text">Right-click any request → "Save all as HAR with content"</div>
+      </div>
+      <div class="step-item">
+        <div class="step-num">STEP 03</div>
+        <div class="step-text">Enter your base URL, drop the HAR file, click Generate</div>
+      </div>
+      <div class="step-item">
+        <div class="step-num">STEP 04</div>
+        <div class="step-text">Download the .json → Import into Postman → Set AUTH_TOKEN → Done</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Config card -->
+  <div class="card">
+    <div class="section-label">Configuration</div>
+
+    <!-- Base URLs -->
+    <div style="margin-bottom:24px;">
+      <div style="font-size:13px;color:var(--muted);margin-bottom:12px;">Base URL(s) — first URL becomes <code style="color:var(--accent);font-family:'JetBrains Mono',monospace;">{{BASE_URL}}</code>, others are hardcoded</div>
+      <div id="urlContainer">
+        <div class="url-row" data-index="0">
+          <span class="url-tag">PRIMARY</span>
+          <input type="text" class="url-input" placeholder="https://gold-loan-backend-api.gfau.augmont.com" value="https://gold-loan-backend-api.gfau.augmont.com">
+        </div>
+      </div>
+      <button class="add-url-btn" onclick="addUrlRow()">+ Add another base URL</button>
+    </div>
+
+    <div class="divider"></div>
+
+    <!-- HAR drop zone -->
+    <div style="margin-bottom:24px;">
+      <div style="font-size:13px;color:var(--muted);margin-bottom:12px;">HAR File</div>
+      <div class="drop-zone" id="dropZone" onclick="document.getElementById('harFile').click()">
+        <div id="dropDefault">
+          <span class="drop-icon">📂</span>
+          <div class="drop-title">Drop HAR file here</div>
+          <div class="drop-sub">or click to browse — exported from Chrome DevTools</div>
+        </div>
+        <div class="file-info" id="fileInfo">
+          <span>✅</span>
+          <span class="file-name" id="fileName"></span>
+          <span class="file-size" id="fileSize"></span>
+          <button class="clear-file" onclick="clearFile(event)">✕</button>
+        </div>
+      </div>
+      <input type="file" id="harFile" accept=".har,application/json" onchange="handleFileSelect(event)">
+    </div>
+
+    <div class="divider"></div>
+
+    <!-- Options -->
+    <div>
+      <div style="font-size:13px;color:var(--muted);margin-bottom:12px;">Options</div>
+      <div class="options-row">
+        <label class="checkbox-label">
+          <input type="checkbox" id="optDedup" checked>
+          <span class="custom-check">✓</span>
+          Remove consecutive duplicates
+        </label>
+        <label class="checkbox-label">
+          <input type="checkbox" id="optFolders" checked>
+          <span class="custom-check">✓</span>
+          Organise into folders
+        </label>
+        <label class="checkbox-label">
+          <input type="checkbox" id="optMaskAuth" checked>
+          <span class="custom-check">✓</span>
+          Mask auth tokens
+        </label>
+        <label class="checkbox-label">
+          <input type="checkbox" id="optStripBrowser" checked>
+          <span class="custom-check">✓</span>
+          Strip browser headers
+        </label>
+      </div>
+    </div>
+
+    <!-- Generate button -->
+    <button class="generate-btn" id="generateBtn" onclick="generate()" disabled>
+      Generate Postman Collection
+    </button>
+
+    <div class="progress-bar" id="progressBar">
+      <div class="progress-fill" id="progressFill"></div>
+    </div>
+    <div class="progress-text" id="progressText"></div>
+    <div class="error-block" id="errorBlock"></div>
+  </div>
+
+  <!-- Results -->
+  <div class="results-card" id="resultsCard">
+    <div class="section-label">Collection Ready</div>
+
+    <div class="stats-row" id="statsRow"></div>
+
+    <div class="context-block" id="contextBlock"></div>
+
+    <div style="overflow-x:auto;">
+      <table class="summary-table" id="summaryTable">
+        <thead>
+          <tr>
+            <th>#</th>
+            <th>Folder</th>
+            <th>Method</th>
+            <th>Path</th>
+            <th>Description</th>
+          </tr>
+        </thead>
+        <tbody id="summaryBody"></tbody>
+      </table>
+    </div>
+
+    <button class="download-btn" id="downloadBtn">
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+      Download Postman Collection
+    </button>
+  </div>
+
+  <footer>
+    <span class="footer-note">// All processing happens in your browser — no data is uploaded anywhere</span>
+    <span class="footer-badge">Augmont Engineering</span>
+  </footer>
+
+</div>
+
+<script>
+// ─── State ───────────────────────────────────────────────────────────────────
+let harData = null;
+let collectionBlob = null;
+let collectionFilename = '';
+
+const HMAC_SECRET = '3056301006072a8648ce3d020106052b8104000a0342000499c5f442c3264bcdfb093b0bc820e3f0f6546972856ebec2f8ccc03f49abdb47ffcfcaf4f37e0ec53050760e74014767e30a8a3e891f4db8c83fa27627898f15';
+
+const STRIP_HEADERS = new Set([
+  'host','content-length',':authority',':method',':path',':scheme',
+  'origin','referer','pragma','cache-control','accept-language',
+  'accept-encoding','accept','priority','user-agent',
+  'sec-fetch-site','sec-fetch-mode','sec-fetch-dest',
+  'sec-ch-ua','sec-ch-ua-mobile','sec-ch-ua-platform'
+]);
+
+const PRE_REQUEST_SCRIPT = [
+  "// ── Augmont Signature Pre-Request Script ──────────────────────────────────",
+  "const secret = pm.collectionVariables.get(\"HMAC_SECRET\");",
+  "let url = pm.request.url.getPath();",
+  "const query = pm.request.url.getQueryString();",
+  "if (query) url += `?${query}`;",
+  "url = url.replace(/%20/g, \" \");",
+  "url = url.replace(/\\/\\/+/g, \"/\");",
+  "let valuebody = {};",
+  "if ([\"POST\", \"PUT\", \"PATCH\"].includes(pm.request.method)) {",
+  "    if (pm.request.body && pm.request.body.raw) {",
+  "        try { valuebody = JSON.parse(pm.request.body.raw); } catch(e) { valuebody = {}; }",
+  "    }",
+  "}",
+  "const finalPayload = Object.assign({}, valuebody, { url: url });",
+  "const hmacString = JSON.stringify(finalPayload);",
+  "const signature = CryptoJS.HmacSHA256(hmacString, secret).toString(CryptoJS.enc.Hex);",
+  "pm.request.headers.upsert({ key: \"signature\", value: signature });",
+  "console.log(\"🔍 URL:\", url);",
+  "console.log(\"📦 BODY:\", valuebody);",
+  "console.log(\"🧠 PAYLOAD:\", hmacString);",
+  "console.log(\"✅ SIGNATURE:\", signature);"
+];
+
+// ─── URL rows ─────────────────────────────────────────────────────────────────
+let urlCount = 1;
+
+function addUrlRow() {
+  urlCount++;
+  const container = document.getElementById('urlContainer');
+  const div = document.createElement('div');
+  div.className = 'url-row';
+  div.dataset.index = urlCount - 1;
+  div.innerHTML = `
+    <span class="url-tag" style="color:var(--muted);">SECONDARY</span>
+    <input type="text" class="url-input" placeholder="https://other-service.augmont.com">
+    <button class="btn-icon" onclick="removeUrlRow(this)" title="Remove">✕</button>
+  `;
+  container.appendChild(div);
+}
+
+function removeUrlRow(btn) {
+  btn.closest('.url-row').remove();
+}
+
+function getBaseUrls() {
+  const inputs = document.querySelectorAll('#urlContainer .url-input');
+  return Array.from(inputs).map(i => i.value.trim().replace(/\/$/, '')).filter(Boolean);
+}
+
+// ─── File handling ────────────────────────────────────────────────────────────
+const dropZone = document.getElementById('dropZone');
+
+dropZone.addEventListener('dragover', e => { e.preventDefault(); dropZone.classList.add('dragover'); });
+dropZone.addEventListener('dragleave', () => dropZone.classList.remove('dragover'));
+dropZone.addEventListener('drop', e => {
+  e.preventDefault();
+  dropZone.classList.remove('dragover');
+  const file = e.dataTransfer.files[0];
+  if (file) processFile(file);
+});
+
+function handleFileSelect(e) {
+  const file = e.target.files[0];
+  if (file) processFile(file);
+}
+
+function processFile(file) {
+  const reader = new FileReader();
+  reader.onload = e => {
+    try {
+      harData = JSON.parse(e.target.result);
+      showFileInfo(file.name, file.size);
+      checkReady();
+    } catch {
+      showError('Invalid HAR file — could not parse JSON.');
+    }
+  };
+  reader.readAsText(file);
+}
+
+function showFileInfo(name, size) {
+  document.getElementById('dropDefault').style.display = 'none';
+  const fi = document.getElementById('fileInfo');
+  fi.classList.add('visible');
+  document.getElementById('fileName').textContent = name;
+  document.getElementById('fileSize').textContent = formatBytes(size);
+  dropZone.classList.add('has-file');
+}
+
+function clearFile(e) {
+  e.stopPropagation();
+  harData = null;
+  document.getElementById('harFile').value = '';
+  document.getElementById('dropDefault').style.display = 'block';
+  document.getElementById('fileInfo').classList.remove('visible');
+  dropZone.classList.remove('has-file');
+  checkReady();
+}
+
+function checkReady() {
+  document.getElementById('generateBtn').disabled = !harData;
+}
+
+function formatBytes(b) {
+  if (b < 1024) return b + ' B';
+  if (b < 1048576) return (b/1024).toFixed(1) + ' KB';
+  return (b/1048576).toFixed(1) + ' MB';
+}
+
+// ─── Progress ─────────────────────────────────────────────────────────────────
+function setProgress(pct, text) {
+  document.getElementById('progressBar').classList.add('visible');
+  document.getElementById('progressText').classList.add('visible');
+  document.getElementById('progressFill').style.width = pct + '%';
+  document.getElementById('progressText').textContent = text;
+}
+
+function showError(msg) {
+  const el = document.getElementById('errorBlock');
+  el.textContent = '⚠ ' + msg;
+  el.classList.add('visible');
+}
+
+function clearError() {
+  document.getElementById('errorBlock').classList.remove('visible');
+}
+
+// ─── Helpers ──────────────────────────────────────────────────────────────────
+function inferFolder(urlPath) {
+  const segments = urlPath.replace(/^\//, '').split('/');
+  // skip 'api' prefix if present
+  const seg = segments[0] === 'api' ? segments[1] : segments[0];
+  if (!seg) return 'General';
+  return seg
+    .split(/[-_]/)
+    .map(w => w.charAt(0).toUpperCase() + w.slice(1))
+    .join(' ');
+}
+
+function inferDescription(method, path, body) {
+  const parts = path.replace(/^\/api\//, '').split('/');
+  const last = parts[parts.length - 1].replace(/[-_]/g, ' ');
+  const folder = parts[0] ? parts[0].replace(/[-_]/g, ' ') : '';
+  const methodMap = {
+    GET: 'Fetch',
+    POST: 'Create/submit',
+    PUT: 'Update',
+    PATCH: 'Partially update',
+    DELETE: 'Delete'
+  };
+  const verb = methodMap[method] || method.toLowerCase();
+  return `${verb} ${last}${folder && folder !== last ? ' for ' + folder : ''}`;
+}
+
+function getPathFromUrl(fullUrl, baseUrls) {
+  for (const base of baseUrls) {
+    if (fullUrl.startsWith(base)) {
+      let path = fullUrl.slice(base.length).split('?')[0];
+      path = path.replace(/\/\/+/g, '/');
+      if (!path.startsWith('/')) path = '/' + path;
+      return path;
+    }
+  }
+  // Secondary URL — extract path
+  try {
+    const u = new URL(fullUrl);
+    return u.pathname.replace(/\/\/+/g, '/');
+  } catch { return '/'; }
+}
+
+function urlToPostmanUrl(rawUrl, primaryBase) {
+  let urlStr = rawUrl;
+  const isPrimary = urlStr.startsWith(primaryBase);
+  
+  try {
+    const u = new URL(urlStr);
+    let pathname = u.pathname.replace(/\/\/+/g, '/');
+    const pathParts = pathname.replace(/^\//, '').split('/').filter(Boolean);
+    const queryParams = [];
+    u.searchParams.forEach((v, k) => queryParams.push({ key: k, value: v }));
+    
+    let rawFull, host;
+    if (isPrimary) {
+      rawFull = `{{BASE_URL}}/${pathParts.join('/')}`;
+      if (queryParams.length) rawFull += '?' + queryParams.map(p => `${p.key}=${p.value}`).join('&');
+      host = ['{{BASE_URL}}'];
+    } else {
+      rawFull = `${u.origin}/${pathParts.join('/')}`;
+      if (queryParams.length) rawFull += '?' + queryParams.map(p => `${p.key}=${p.value}`).join('&');
+      host = [u.origin];
+    }
+    
+    const result = { raw: rawFull, host, path: pathParts };
+    if (queryParams.length) result.query = queryParams;
+    return result;
+  } catch {
+    return { raw: isPrimary ? `{{BASE_URL}}` : urlStr, host: ['{{BASE_URL}}'], path: [] };
+  }
+}
+
+function processHeaders(harHeaders, hasAuth) {
+  const optMask = document.getElementById('optMaskAuth').checked;
+  const optStrip = document.getElementById('optStripBrowser').checked;
+  const headers = [];
+  let foundAuth = false;
+
+  // STEP A — Authorization first
+  for (const h of harHeaders) {
+    const key = h.name.toLowerCase();
+    if (key === 'authorization') {
+      foundAuth = true;
+      if (optMask) {
+        headers.push({ key: 'authorization', value: 'Bearer {{AUTH_TOKEN}}' });
+      }
+      break;
+    }
+  }
+
+  // STEP B+C — rest of headers
+  for (const h of harHeaders) {
+    const key = h.name.toLowerCase();
+    if (key === 'authorization') continue; // already handled
+    if (key === 'signature') continue; // injected by script
+    if (optStrip && STRIP_HEADERS.has(key)) continue;
+
+    // mask sensitive headers
+    if (optMask && /token|secret|api-key|apikey|x-api-key/.test(key)) {
+      const varName = h.name.toUpperCase().replace(/-/g, '_');
+      headers.push({ key: h.name, value: `{{${varName}}}` });
+      continue;
+    }
+
+    // skip raw JWT values that slipped through
+    if (optMask && h.value && h.value.startsWith('eyJ')) continue;
+
+    headers.push({ key: h.name, value: h.value });
+  }
+
+  return headers;
+}
+
+// ─── Main generator ───────────────────────────────────────────────────────────
+async function generate() {
+  clearError();
+  collectionBlob = null;
+
+  const baseUrls = getBaseUrls();
+  if (!baseUrls.length) { showError('Please enter at least one base URL.'); return; }
+  if (!harData) { showError('Please upload a HAR file.'); return; }
+
+  const primaryBase = baseUrls[0];
+  const optDedup = document.getElementById('optDedup').checked;
+  const optFolders = document.getElementById('optFolders').checked;
+
+  document.getElementById('generateBtn').disabled = true;
+  document.getElementById('resultsCard').classList.remove('visible');
+
+  setProgress(10, 'Parsing HAR entries...');
+  await tick();
+
+  // ── Step 1: Filter entries
+  const entries = harData?.log?.entries || [];
+  let filtered = entries.filter(e => {
+    const url = e.request?.url || '';
+    return baseUrls.some(base => url.startsWith(base));
+  });
+
+  setProgress(25, `Found ${filtered.length} matching requests. Deduplicating...`);
+  await tick();
+
+  // ── Remove consecutive duplicates
+  if (optDedup) {
+    const deduped = [];
+    for (let i = 0; i < filtered.length; i++) {
+      const curr = filtered[i];
+      const prev = deduped[deduped.length - 1];
+      const currKey = `${curr.request.method}::${curr.request.url.split('?')[0]}`;
+      const prevKey = prev ? `${prev.request.method}::${prev.request.url.split('?')[0]}` : null;
+      if (currKey !== prevKey) deduped.push(curr);
+    }
+    const removed = filtered.length - deduped.length;
+    filtered = deduped;
+    if (removed > 0) setProgress(35, `Removed ${removed} consecutive duplicate(s). Building collection...`);
+  }
+
+  setProgress(50, 'Building Postman requests...');
+  await tick();
+
+  if (!filtered.length) {
+    showError(`No requests matched the base URL(s): ${baseUrls.join(', ')}`);
+    document.getElementById('generateBtn').disabled = false;
+    return;
+  }
+
+  // ── Step 2: Build requests
+  const folderMap = {}; // folderName → [items]
+  const folderOrder = [];
+  const summaryRows = [];
+  let reqIndex = 1;
+
+  for (const entry of filtered) {
+    const req = entry.request;
+    const method = req.method.toUpperCase();
+    const rawUrl = req.url;
+
+    const path = getPathFromUrl(rawUrl, baseUrls);
+    const folderName = optFolders ? inferFolder(path) : 'All Requests';
+
+    // Headers
+    const hasAuth = req.headers.some(h => h.name.toLowerCase() === 'authorization');
+    const headers = processHeaders(req.headers, hasAuth);
+
+    // Body
+    let bodyObj = null;
+    if (['POST','PUT','PATCH'].includes(method) && req.postData?.text) {
+      try {
+        JSON.parse(req.postData.text); // validate
+        bodyObj = {
+          mode: 'raw',
+          raw: req.postData.text,
+          options: { raw: { language: 'json' } }
+        };
+      } catch {
+        bodyObj = { mode: 'raw', raw: req.postData.text };
+      }
+    }
+
+    // URL
+    const postmanUrl = urlToPostmanUrl(rawUrl, primaryBase);
+
+    // Description
+    const desc = inferDescription(method, path, req.postData?.text);
+
+    // Request item
+    const item = {
+      name: desc,
+      description: desc,
+      request: {
+        method,
+        header: headers,
+        url: postmanUrl
+      },
+      event: [{
+        listen: 'prerequest',
+        script: {
+          type: 'text/javascript',
+          exec: PRE_REQUEST_SCRIPT
+        }
+      }]
+    };
+
+    if (bodyObj) item.request.body = bodyObj;
+
+    // Add to folder
+    if (!folderMap[folderName]) {
+      folderMap[folderName] = [];
+      folderOrder.push(folderName);
+    }
+    folderMap[folderName].push(item);
+
+    summaryRows.push({ index: reqIndex++, folder: folderName, method, path, desc });
+  }
+
+  setProgress(75, 'Assembling collection structure...');
+  await tick();
+
+  // ── Build collection JSON
+  const today = new Date().toISOString().split('T')[0];
+  const domain = primaryBase.replace(/https?:\/\//, '').split('/')[0].split('.')[0];
+  collectionFilename = `augmont-api-${domain}-${today}.postman_collection.json`;
+
+  const collectionItems = optFolders
+    ? folderOrder.map(name => ({ name, item: folderMap[name] }))
+    : (folderMap['All Requests'] || []);
+
+  const collection = {
+    info: {
+      name: `Augmont API — ${domain} — ${today}`,
+      schema: 'https://schema.getpostman.com/json/collection/v2.1.0/collection.json'
+    },
+    item: collectionItems,
+    variable: [
+      { key: 'BASE_URL', value: primaryBase, type: 'default' },
+      { key: 'HMAC_SECRET', value: HMAC_SECRET, type: 'default' },
+      { key: 'AUTH_TOKEN', value: '', type: 'default' }
+    ]
+  };
+
+  setProgress(90, 'Finalizing...');
+  await tick();
+
+  const json = JSON.stringify(collection, null, 2);
+  collectionBlob = new Blob([json], { type: 'application/json' });
+
+  setProgress(100, `Done! ${filtered.length} requests across ${folderOrder.length} folder(s).`);
+  await tick();
+
+  // ── Render results
+  renderResults(summaryRows, folderOrder.length, filtered.length);
+  document.getElementById('generateBtn').disabled = false;
+}
+
+function renderResults(rows, folderCount, totalCount) {
+  // Stats
+  const methods = {};
+  rows.forEach(r => { methods[r.method] = (methods[r.method] || 0) + 1; });
+  let statsHtml = `
+    <div class="stat"><span class="stat-num">${totalCount}</span><span class="stat-label">Requests</span></div>
+    <div class="stat"><span class="stat-num">${folderCount}</span><span class="stat-label">Folders</span></div>
+  `;
+  Object.entries(methods).forEach(([m, c]) => {
+    statsHtml += `<div class="stat"><span class="stat-num" style="font-size:20px;">${c}</span><span class="stat-label">${m}</span></div>`;
+  });
+  document.getElementById('statsRow').innerHTML = statsHtml;
+
+  // Context block
+  const folders = [...new Set(rows.map(r => r.folder))];
+  const methodList = Object.keys(methods).join(', ');
+  document.getElementById('contextBlock').innerHTML = `
+    <strong>📋 Collection Context</strong><br>
+    This collection contains <strong>${totalCount} API requests</strong> organised into <strong>${folderCount} feature folder(s)</strong>: ${folders.join(', ')}.<br>
+    Methods covered: ${methodList}. Set <strong>AUTH_TOKEN</strong> in collection variables after importing to authenticate requests.
+  `;
+
+  // Summary table
+  const tbody = document.getElementById('summaryBody');
+  tbody.innerHTML = rows.map(r => `
+    <tr>
+      <td style="color:var(--muted);font-family:'JetBrains Mono',monospace;font-size:11px;">${r.index}</td>
+      <td><span class="folder-badge">${r.folder}</span></td>
+      <td><span class="method-badge method-${r.method}">${r.method}</span></td>
+      <td class="path-mono">${r.path}</td>
+      <td class="desc-text">${r.desc}</td>
+    </tr>
+  `).join('');
+
+  // Download button
+  const btn = document.getElementById('downloadBtn');
+  btn.onclick = () => {
+    const a = document.createElement('a');
+    a.href = URL.createObjectURL(collectionBlob);
+    a.download = collectionFilename;
+    a.click();
+    setTimeout(() => URL.revokeObjectURL(a.href), 1000);
+  };
+
+  document.getElementById('resultsCard').classList.add('visible');
+  document.getElementById('resultsCard').scrollIntoView({ behavior: 'smooth', block: 'start' });
+}
+
+function tick() {
+  return new Promise(r => setTimeout(r, 60));
+}
+
+// ─── Checkbox styling ─────────────────────────────────────────────────────────
+document.querySelectorAll('.checkbox-label input[type="checkbox"]').forEach(cb => {
+  cb.addEventListener('change', function() {
+    const check = this.nextElementSibling;
+    check.textContent = this.checked ? '✓' : '';
+  });
+});
+</script>
+</body>
+</html>
+```
