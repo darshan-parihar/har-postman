@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>HAR → Postman | Augmont</title>
+<title>HAR → Postman Converter</title>
 <style>
   * { margin: 0; padding: 0; box-sizing: border-box; }
 
@@ -11,7 +11,7 @@
     background: #f5f5f5;
     color: #111;
     font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
-    font-size: 14px;
+    font-size: 15px;
     min-height: 100vh;
   }
 
@@ -538,9 +538,20 @@
 <div class="page">
 
   <div class="header">
-    <div class="header-tag">Augmont · API Tools</div>
+    <div class="header-tag">API Tools</div>
     <h1>HAR → Postman Converter</h1>
     <p>Drop a Chrome DevTools HAR export and get a ready-to-import Postman collection.</p>
+  </div>
+
+  <!-- How to use -->
+  <div class="section" style="padding:16px 20px;">
+    <div class="section-title" style="margin-bottom:10px;">How to use</div>
+    <ol style="padding-left:18px;color:#555;line-height:2;font-size:13px;">
+      <li>Open Chrome DevTools → <strong>Network</strong> tab → perform your API flow</li>
+      <li>Right-click any request → <strong>Save all as HAR with content</strong></li>
+      <li>Enter your base URL and drop the HAR file below</li>
+      <li>Click <strong>Generate</strong> → download both JSON files → import into Postman</li>
+    </ol>
   </div>
 
   <!-- Configuration -->
@@ -553,7 +564,7 @@
       <div id="urlContainer">
         <div class="url-row">
           <span class="url-tag">PRIMARY</span>
-          <input type="text" class="url-input" placeholder="https://gold-loan-backend-api.gfau.augmont.com" value="https://gold-loan-backend-api.gfau.augmont.com">
+          <input type="text" class="url-input" placeholder="https://api.example.com">
         </div>
       </div>
       <button class="add-btn" onclick="addUrlRow()">+ Add URL</button>
@@ -574,7 +585,7 @@
     <!-- Environment Name -->
     <div class="field">
       <div class="field-label">Environment Name</div>
-      <input type="text" id="envName" placeholder="Augmont — gold-loan — dev">
+      <input type="text" id="envName" placeholder="my-api — dev">
     </div>
   </div>
 
@@ -606,8 +617,8 @@
         <span class="opt-check">✓</span>Remove duplicates
       </label>
       <label class="opt-label">
-        <input type="checkbox" id="optFolders" checked>
-        <span class="opt-check">✓</span>Organise folders
+        <input type="checkbox" id="optFolders">
+        <span class="opt-check"></span>Organise folders
       </label>
       <label class="opt-label">
         <input type="checkbox" id="optMaskAuth" checked>
@@ -618,12 +629,12 @@
         <span class="opt-check">✓</span>Strip browser headers
       </label>
       <label class="opt-label">
-        <input type="checkbox" id="optTestScripts" checked>
-        <span class="opt-check">✓</span>Add test scripts
+        <input type="checkbox" id="optTestScripts">
+        <span class="opt-check"></span>Add test scripts
       </label>
       <label class="opt-label">
-        <input type="checkbox" id="optExamples" checked>
-        <span class="opt-check">✓</span>Capture examples
+        <input type="checkbox" id="optExamples">
+        <span class="opt-check"></span>Capture examples
       </label>
       <label class="opt-label">
         <input type="checkbox" id="optNativeAuth" checked>
@@ -679,7 +690,7 @@
     </details>
   </div>
 
-  <footer>All processing happens in your browser — no data uploaded · Augmont Engineering</footer>
+  <footer>All processing happens in your browser — no data uploaded</footer>
 
 </div>
 
@@ -700,7 +711,7 @@ const STRIP_HEADERS = new Set([
 ]);
 
 const PRE_REQUEST_SCRIPT = [
-  "// ── Augmont Signature Pre-Request Script ──────────────────────────────────",
+  "// ── HMAC Signature Pre-Request Script ────────────────────────────────────",
   "const secret = pm.collectionVariables.get(\"HMAC_SECRET\");",
   "let url = pm.request.url.getPath();",
   "const query = pm.request.url.getQueryString();",
@@ -764,7 +775,7 @@ function addUrlRow() {
   div.className = 'url-row';
   div.innerHTML = `
     <span class="url-tag secondary">URL</span>
-    <input type="text" class="url-input" placeholder="https://other-service.augmont.com" style="flex:1;">
+    <input type="text" class="url-input" placeholder="https://other-service.example.com" style="flex:1;">
     <button class="remove-btn" onclick="this.closest('.url-row').remove()">✕</button>
   `;
   container.appendChild(div);
@@ -948,7 +959,7 @@ async function generate() {
   const hmacSecret    = document.getElementById('hmacSecret').value.trim();
   const domain        = primaryBase.replace(/https?:\/\//, '').split('/')[0].split('.')[0];
   const today         = new Date().toISOString().split('T')[0];
-  let envName         = document.getElementById('envName').value.trim() || `Augmont — ${domain} — dev`;
+  let envName         = document.getElementById('envName').value.trim() || `${domain} — dev`;
 
   document.getElementById('generateBtn').disabled = true;
   document.getElementById('resultsCard').classList.remove('visible');
@@ -1046,13 +1057,13 @@ async function generate() {
   setProgress(80, 'Assembling collection...');
   await tick();
 
-  collectionFilename = `augmont-api-${domain}-${today}.postman_collection.json`;
-  envFilename = `augmont-${domain}-env-${today}.postman_environment.json`;
+  collectionFilename = `${domain}-api-${today}.postman_collection.json`;
+  envFilename = `${domain}-env-${today}.postman_environment.json`;
 
   const collection = {
     info: {
       _postman_id: generateUUID(),
-      name: `Augmont API — ${domain} — ${today}`,
+      name: `${domain} API — ${today}`,
       schema: 'https://schema.getpostman.com/json/collection/v2.1.0/collection.json'
     },
     ...(optNativeAuth ? { auth: { type: 'bearer', bearer: [{ key: 'token', value: '{{AUTH_TOKEN}}', type: 'string' }] } } : {}),
