@@ -492,38 +492,77 @@
 
   .dl-btn.outline:hover { border-color: #111; background: #f8f8f8; }
 
-  /* Newman */
-  .newman-block {
-    border: 1px solid #eee;
-    border-radius: 7px;
-    overflow: hidden;
+  /* Collapsible Use Cases */
+  details.section summary::-webkit-details-marker { display: none; }
+  details.section summary { border-radius: 10px; transition: background 0.15s; }
+  details.section summary:hover { background: #f8f8f8; }
+  details.section[open] summary { border-bottom: 1px solid #e5e5e5; border-radius: 10px 10px 0 0; }
+  details.section[open] .uc-arrow { transform: rotate(180deg); }
+
+  /* Tooltip */
+  .info-icon {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 14px;
+    height: 14px;
+    border-radius: 50%;
+    background: #ddd;
+    color: #666;
+    font-size: 9px;
+    font-weight: 700;
+    font-style: normal;
+    cursor: default;
+    flex-shrink: 0;
+    position: relative;
+    margin-left: 2px;
+    line-height: 1;
   }
 
-  .newman-block summary {
-    padding: 8px 12px;
-    background: #f8f8f8;
-    cursor: pointer;
-    font-size: 12px;
-    color: #888;
-    list-style: none;
-    user-select: none;
-    transition: color 0.15s;
-  }
+  .info-icon:hover { background: #bbb; color: #111; }
 
-  .newman-block summary::-webkit-details-marker { display: none; }
-  .newman-block summary:hover { color: #111; }
-  .newman-block[open] summary { color: #111; border-bottom: 1px solid #eee; }
-
-  .newman-code {
-    padding: 14px;
-    background: #1a1a1a;
-    color: #d4d4d4;
-    font-family: 'SF Mono', 'Fira Mono', monospace;
+  .info-icon::after {
+    content: attr(data-tip);
+    position: absolute;
+    bottom: calc(100% + 7px);
+    left: 50%;
+    transform: translateX(-50%);
+    background: #111;
+    color: #fff;
     font-size: 11px;
-    line-height: 1.7;
-    white-space: pre-wrap;
-    word-break: break-all;
+    font-weight: 400;
+    padding: 6px 10px;
+    border-radius: 6px;
+    white-space: nowrap;
+    max-width: 220px;
+    white-space: normal;
+    text-align: left;
+    line-height: 1.4;
+    width: max-content;
+    max-width: 200px;
+    pointer-events: none;
+    opacity: 0;
+    transition: opacity 0.15s;
+    z-index: 10;
   }
+
+  .info-icon::before {
+    content: '';
+    position: absolute;
+    bottom: calc(100% + 2px);
+    left: 50%;
+    transform: translateX(-50%);
+    border: 5px solid transparent;
+    border-top-color: #111;
+    pointer-events: none;
+    opacity: 0;
+    transition: opacity 0.15s;
+    z-index: 10;
+  }
+
+  .info-icon:hover::after,
+  .info-icon:hover::before { opacity: 1; }
+
 
   /* Footer */
   footer {
@@ -544,15 +583,84 @@
   </div>
 
   <!-- How to use -->
-  <div class="section" style="padding:16px 20px;">
-    <div class="section-title" style="margin-bottom:10px;">How to use</div>
-    <ol style="padding-left:18px;color:#555;line-height:2;font-size:13px;">
+  <details class="section" style="padding:0;">
+    <summary style="padding:14px 20px;cursor:pointer;list-style:none;display:flex;align-items:center;justify-content:space-between;user-select:none;">
+      <div class="section-title" style="margin-bottom:0;">How to use</div>
+      <span class="uc-arrow" style="font-size:11px;color:#bbb;transition:transform 0.2s;">▼</span>
+    </summary>
+    <ol style="padding:0 20px 16px 38px;color:#555;line-height:2;font-size:13px;">
       <li>Open Chrome DevTools → <strong>Network</strong> tab → perform your API flow</li>
       <li>Right-click any request → <strong>Save all as HAR with content</strong></li>
       <li>Enter your base URL and drop the HAR file below</li>
       <li>Click <strong>Generate</strong> → download both JSON files → import into Postman</li>
     </ol>
-  </div>
+  </details>
+
+  <!-- Use Cases -->
+  <details class="section" style="padding:0;">
+    <summary style="padding:14px 20px;cursor:pointer;list-style:none;display:flex;align-items:center;justify-content:space-between;user-select:none;">
+      <div>
+        <div class="section-title" style="margin-bottom:2px;">Use Cases</div>
+        <span style="font-size:12px;color:#bbb;">Common scenarios for QA &amp; testing teams</span>
+      </div>
+      <span class="uc-arrow" style="font-size:11px;color:#bbb;transition:transform 0.2s;">▼</span>
+    </summary>
+    <div style="padding:0 20px 16px;">
+
+      <!-- 1. Regression Testing -->
+      <div style="background:#f8f8f8;border-radius:8px;padding:14px 16px;margin-bottom:10px;">
+        <div style="display:flex;align-items:center;gap:8px;margin-bottom:8px;">
+          <span class="badge" style="background:#e8f8ee;color:#27ae60;">Regression Testing</span>
+          <strong style="font-size:13px;color:#111;">Capture &amp; replay a full API flow</strong>
+        </div>
+        <div style="font-size:12px;color:#555;line-height:1.7;">
+          <div><span style="font-size:10px;font-weight:700;color:#aaa;letter-spacing:0.06em;margin-right:6px;">WHEN</span>After a backend release — re-run the exact same API sequence to check nothing broke.</div>
+          <div style="margin-top:4px;"><span style="font-size:10px;font-weight:700;color:#aaa;letter-spacing:0.06em;margin-right:6px;">EXAMPLE</span>Record login → fetch profile → update settings → logout. Drop HAR, generate collection, run in Postman. Compare responses to the previous run.</div>
+          <div style="margin-top:4px;"><span style="font-size:10px;font-weight:700;color:#27ae60;letter-spacing:0.06em;margin-right:6px;">TIP</span>Enable <strong>Remove duplicates</strong> to strip noise from page refreshes.</div>
+        </div>
+      </div>
+
+      <!-- 2. API Exploration -->
+      <div style="background:#f8f8f8;border-radius:8px;padding:14px 16px;margin-bottom:10px;">
+        <div style="display:flex;align-items:center;gap:8px;margin-bottom:8px;">
+          <span class="badge" style="background:#e8f0ff;color:#2563eb;">API Exploration</span>
+          <strong style="font-size:13px;color:#111;">Map an unfamiliar API without reading docs</strong>
+        </div>
+        <div style="font-size:12px;color:#555;line-height:1.7;">
+          <div><span style="font-size:10px;font-weight:700;color:#aaa;letter-spacing:0.06em;margin-right:6px;">WHEN</span>A new service is deployed and you need to understand its endpoints quickly.</div>
+          <div style="margin-top:4px;"><span style="font-size:10px;font-weight:700;color:#aaa;letter-spacing:0.06em;margin-right:6px;">EXAMPLE</span>Browse the app normally with DevTools open, save HAR. The generated collection shows every endpoint called — instant API map with real request &amp; response bodies.</div>
+          <div style="margin-top:4px;"><span style="font-size:10px;font-weight:700;color:#2563eb;letter-spacing:0.06em;margin-right:6px;">TIP</span>Enable <strong>Organise folders</strong> to auto-group endpoints by feature area.</div>
+        </div>
+      </div>
+
+      <!-- 3. Auth Debugging -->
+      <div style="background:#f8f8f8;border-radius:8px;padding:14px 16px;margin-bottom:10px;">
+        <div style="display:flex;align-items:center;gap:8px;margin-bottom:8px;">
+          <span class="badge" style="background:#fff8e0;color:#d97706;">Auth Debugging</span>
+          <strong style="font-size:13px;color:#111;">Isolate authentication issues</strong>
+        </div>
+        <div style="font-size:12px;color:#555;line-height:1.7;">
+          <div><span style="font-size:10px;font-weight:700;color:#aaa;letter-spacing:0.06em;margin-right:6px;">WHEN</span>Login works in the browser but fails in Postman or automation scripts.</div>
+          <div style="margin-top:4px;"><span style="font-size:10px;font-weight:700;color:#aaa;letter-spacing:0.06em;margin-right:6px;">EXAMPLE</span>Capture the login request in HAR. The generated collection has the HMAC pre-request script wired — open Postman Console to see the exact signature payload and compare it with what the browser sent.</div>
+          <div style="margin-top:4px;"><span style="font-size:10px;font-weight:700;color:#d97706;letter-spacing:0.06em;margin-right:6px;">TIP</span>Enable <strong>Add test scripts</strong> to auto-capture the token from the login response into <code style="background:#f0f0f0;padding:1px 4px;border-radius:3px;">AUTH_TOKEN</code>.</div>
+        </div>
+      </div>
+
+      <!-- 4. Bug Reporting -->
+      <div style="background:#f8f8f8;border-radius:8px;padding:14px 16px;">
+        <div style="display:flex;align-items:center;gap:8px;margin-bottom:8px;">
+          <span class="badge" style="background:#f3eeff;color:#7c3aed;">Bug Reporting</span>
+          <strong style="font-size:13px;color:#111;">Share a reproducible API scenario with devs</strong>
+        </div>
+        <div style="font-size:12px;color:#555;line-height:1.7;">
+          <div><span style="font-size:10px;font-weight:700;color:#aaa;letter-spacing:0.06em;margin-right:6px;">WHEN</span>Reporting a bug that involves multiple chained API calls.</div>
+          <div style="margin-top:4px;"><span style="font-size:10px;font-weight:700;color:#aaa;letter-spacing:0.06em;margin-right:6px;">EXAMPLE</span>Record the exact steps that trigger the bug. Generate collection. Share the JSON — developers can replay the exact sequence in one click with no manual setup.</div>
+          <div style="margin-top:4px;"><span style="font-size:10px;font-weight:700;color:#7c3aed;letter-spacing:0.06em;margin-right:6px;">TIP</span>Enable <strong>Capture examples</strong> so the collection includes the actual buggy response body as reference evidence.</div>
+        </div>
+      </div>
+
+    </div>
+  </details>
 
   <!-- Configuration -->
   <div class="section">
@@ -615,30 +723,37 @@
       <label class="opt-label">
         <input type="checkbox" id="optDedup" checked>
         <span class="opt-check">✓</span>Remove duplicates
+        <i class="info-icon" data-tip="Skips consecutive identical requests (same method + URL) — keeps only the first occurrence.">i</i>
       </label>
       <label class="opt-label">
         <input type="checkbox" id="optFolders">
         <span class="opt-check"></span>Organise folders
+        <i class="info-icon" data-tip="Groups requests into folders based on the first URL path segment (e.g. /api/users → Users folder).">i</i>
       </label>
       <label class="opt-label">
         <input type="checkbox" id="optMaskAuth" checked>
         <span class="opt-check">✓</span>Mask auth tokens
+        <i class="info-icon" data-tip="Replaces auth header values with {{AUTH_TOKEN}} so secrets are never stored in the collection file.">i</i>
       </label>
       <label class="opt-label">
         <input type="checkbox" id="optStripBrowser" checked>
         <span class="opt-check">✓</span>Strip browser headers
+        <i class="info-icon" data-tip="Removes browser-only headers like sec-fetch-*, user-agent, accept-encoding that are irrelevant in Postman.">i</i>
       </label>
       <label class="opt-label">
         <input type="checkbox" id="optTestScripts">
         <span class="opt-check"></span>Add test scripts
+        <i class="info-icon" data-tip="Attaches a test script to each request that checks: status 2xx, response time &lt;3s, Content-Type JSON, and response shape.">i</i>
       </label>
       <label class="opt-label">
         <input type="checkbox" id="optExamples">
         <span class="opt-check"></span>Capture examples
+        <i class="info-icon" data-tip="Saves the actual response body from the HAR as a Postman example — visible in the Examples tab on each request.">i</i>
       </label>
       <label class="opt-label">
         <input type="checkbox" id="optNativeAuth" checked>
         <span class="opt-check">✓</span>Postman native auth
+        <i class="info-icon" data-tip="Sets Bearer auth at collection level. All requests inherit it automatically — check the Authorization tab in Postman, not Headers.">i</i>
       </label>
     </div>
     <div class="native-auth-hint visible" id="nativeAuthHint">
@@ -684,10 +799,6 @@
       </button>
     </div>
 
-    <details class="newman-block" id="newmanDetails">
-      <summary>▶ Run with Newman (CI/CD)</summary>
-      <pre class="newman-code" id="newmanCode"></pre>
-    </details>
   </div>
 
   <footer>All processing happens in your browser — no data uploaded</footer>
@@ -1131,9 +1242,6 @@ function renderResults(rows, folderCount, total, withTests, withExamples, authEn
 
   document.getElementById('downloadCollectionBtn').onclick = () => triggerDownload(collectionBlob, collectionFilename);
   document.getElementById('downloadEnvBtn').onclick = () => triggerDownload(envBlob, envFilename);
-
-  document.getElementById('newmanCode').textContent =
-    `npm install -g newman\n\nnewman run "${collectionFilename}" \\\n  --environment "${envFilename}" \\\n  --reporters cli,junit \\\n  --reporter-junit-export results.xml`;
 
   document.getElementById('resultsCard').classList.add('visible');
   document.getElementById('resultsCard').scrollIntoView({ behavior: 'smooth', block: 'start' });
