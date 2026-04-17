@@ -3,777 +3,683 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>HAR → Postman | Augmont API Tools</title>
-<link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;600;700;800&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
-<script src="https://cdnjs.cloudflare.com/ajax/libs/crypto-js/4.1.1/crypto-js.min.js"></script>
+<title>HAR → Postman | Augmont</title>
 <style>
-  :root {
-    --bg: #0a0a0f;
-    --surface: #111118;
-    --surface2: #1a1a24;
-    --border: #2a2a3a;
-    --accent: #f5a623;
-    --accent2: #e8882a;
-    --text: #e8e8f0;
-    --muted: #6b6b80;
-    --success: #4ade80;
-    --error: #f87171;
-    --folder-colors: #6366f1, #06b6d4, #10b981, #f59e0b, #ec4899, #8b5cf6;
-  }
-
   * { margin: 0; padding: 0; box-sizing: border-box; }
 
   body {
-    background: var(--bg);
-    color: var(--text);
-    font-family: 'Syne', sans-serif;
+    background: #f5f5f5;
+    color: #111;
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+    font-size: 14px;
     min-height: 100vh;
-    overflow-x: hidden;
   }
 
-  /* Background grid */
-  body::before {
-    content: '';
-    position: fixed;
-    inset: 0;
-    background-image:
-      linear-gradient(rgba(245,166,35,0.03) 1px, transparent 1px),
-      linear-gradient(90deg, rgba(245,166,35,0.03) 1px, transparent 1px);
-    background-size: 40px 40px;
-    pointer-events: none;
-    z-index: 0;
-  }
-
-  .container {
-    max-width: 900px;
+  .page {
+    max-width: 680px;
     margin: 0 auto;
-    padding: 0 24px;
-    position: relative;
-    z-index: 1;
+    padding: 40px 20px 60px;
   }
 
   /* Header */
-  header {
-    padding: 48px 0 40px;
-    border-bottom: 1px solid var(--border);
+  .header {
+    margin-bottom: 32px;
   }
 
-  .logo-row {
-    display: flex;
-    align-items: center;
-    gap: 16px;
-    margin-bottom: 12px;
-  }
-
-  .logo-badge {
-    background: var(--accent);
-    color: #000;
+  .header-tag {
     font-size: 11px;
-    font-weight: 700;
-    letter-spacing: 0.1em;
-    padding: 4px 10px;
-    border-radius: 4px;
-  }
-
-  .tool-label {
-    color: var(--muted);
-    font-size: 12px;
-    font-family: 'JetBrains Mono', monospace;
-    letter-spacing: 0.05em;
-  }
-
-  h1 {
-    font-size: clamp(28px, 5vw, 44px);
-    font-weight: 800;
-    line-height: 1.1;
-    letter-spacing: -0.02em;
-  }
-
-  h1 span {
-    color: var(--accent);
-  }
-
-  .subtitle {
-    color: var(--muted);
-    font-size: 15px;
-    margin-top: 10px;
-    font-weight: 400;
-  }
-
-  /* Main card */
-  .card {
-    background: var(--surface);
-    border: 1px solid var(--border);
-    border-radius: 16px;
-    padding: 32px;
-    margin: 32px 0;
-    position: relative;
-    overflow: hidden;
-  }
-
-  .card::before {
-    content: '';
-    position: absolute;
-    top: 0; left: 0; right: 0;
-    height: 2px;
-    background: linear-gradient(90deg, var(--accent), transparent);
-  }
-
-  .section-label {
-    font-size: 11px;
-    font-weight: 700;
-    letter-spacing: 0.12em;
-    color: var(--accent);
-    text-transform: uppercase;
-    margin-bottom: 16px;
-  }
-
-  /* URL inputs */
-  .url-row {
-    display: flex;
-    gap: 10px;
-    margin-bottom: 10px;
-    align-items: center;
-  }
-
-  .url-input {
-    flex: 1;
-    background: var(--surface2);
-    border: 1px solid var(--border);
-    border-radius: 8px;
-    padding: 12px 16px;
-    color: var(--text);
-    font-family: 'JetBrains Mono', monospace;
-    font-size: 13px;
-    outline: none;
-    transition: border-color 0.2s;
-  }
-
-  .url-input:focus {
-    border-color: var(--accent);
-  }
-
-  .url-input::placeholder { color: var(--muted); }
-
-  .url-tag {
-    background: var(--surface2);
-    border: 1px solid var(--border);
-    border-radius: 6px;
-    padding: 4px 10px;
-    font-size: 11px;
-    font-family: 'JetBrains Mono', monospace;
-    color: var(--accent);
-    white-space: nowrap;
-  }
-
-  .btn-icon {
-    background: transparent;
-    border: 1px solid var(--border);
-    border-radius: 8px;
-    width: 40px;
-    height: 40px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    cursor: pointer;
-    color: var(--muted);
-    font-size: 18px;
-    transition: all 0.2s;
-    flex-shrink: 0;
-  }
-
-  .btn-icon:hover { border-color: var(--error); color: var(--error); }
-
-  .add-url-btn {
-    background: transparent;
-    border: 1px dashed var(--border);
-    border-radius: 8px;
-    padding: 10px 16px;
-    color: var(--muted);
-    font-family: 'Syne', sans-serif;
-    font-size: 13px;
-    cursor: pointer;
-    width: 100%;
-    text-align: left;
-    transition: all 0.2s;
-    margin-top: 4px;
-  }
-
-  .add-url-btn:hover { border-color: var(--accent); color: var(--accent); }
-
-  /* Drop zone */
-  .drop-zone {
-    border: 2px dashed var(--border);
-    border-radius: 12px;
-    padding: 48px 32px;
-    text-align: center;
-    cursor: pointer;
-    transition: all 0.25s;
-    position: relative;
-    background: var(--surface2);
-  }
-
-  .drop-zone:hover, .drop-zone.dragover {
-    border-color: var(--accent);
-    background: rgba(245,166,35,0.04);
-  }
-
-  .drop-zone.has-file {
-    border-color: var(--success);
-    border-style: solid;
-    background: rgba(74,222,128,0.04);
-  }
-
-  .drop-icon {
-    font-size: 40px;
-    margin-bottom: 16px;
-    display: block;
-  }
-
-  .drop-title {
-    font-size: 16px;
     font-weight: 600;
+    letter-spacing: 0.08em;
+    color: #888;
+    text-transform: uppercase;
     margin-bottom: 6px;
   }
 
-  .drop-sub {
-    font-size: 13px;
-    color: var(--muted);
+  .header h1 {
+    font-size: 22px;
+    font-weight: 700;
+    color: #111;
+    letter-spacing: -0.3px;
   }
+
+  .header p {
+    color: #666;
+    font-size: 13px;
+    margin-top: 4px;
+  }
+
+  /* Section */
+  .section {
+    background: #fff;
+    border: 1px solid #e5e5e5;
+    border-radius: 10px;
+    padding: 20px;
+    margin-bottom: 12px;
+  }
+
+  .section-title {
+    font-size: 11px;
+    font-weight: 600;
+    letter-spacing: 0.07em;
+    text-transform: uppercase;
+    color: #999;
+    margin-bottom: 14px;
+  }
+
+  /* Field */
+  .field { margin-bottom: 12px; }
+  .field:last-child { margin-bottom: 0; }
+
+  .field-label {
+    font-size: 12px;
+    color: #666;
+    margin-bottom: 5px;
+  }
+
+  .field-label code {
+    background: #f0f0f0;
+    padding: 1px 5px;
+    border-radius: 3px;
+    font-size: 11px;
+    color: #e07000;
+  }
+
+  /* Inputs */
+  input[type="text"], input[type="password"] {
+    width: 100%;
+    border: 1px solid #ddd;
+    border-radius: 6px;
+    padding: 8px 11px;
+    font-size: 13px;
+    color: #111;
+    background: #fafafa;
+    outline: none;
+    transition: border-color 0.15s;
+    font-family: 'SF Mono', 'Fira Mono', monospace;
+  }
+
+  input[type="text"]:focus, input[type="password"]:focus {
+    border-color: #111;
+    background: #fff;
+  }
+
+  input::placeholder { color: #bbb; }
+
+  /* URL row */
+  .url-row {
+    display: flex;
+    gap: 6px;
+    align-items: center;
+    margin-bottom: 6px;
+  }
+
+  .url-tag {
+    font-size: 10px;
+    font-weight: 600;
+    letter-spacing: 0.06em;
+    color: #fff;
+    background: #111;
+    padding: 3px 7px;
+    border-radius: 4px;
+    white-space: nowrap;
+  }
+
+  .url-tag.secondary { background: #999; }
+
+  .url-tag.secret { background: #c0392b; }
+
+  .remove-btn {
+    background: none;
+    border: 1px solid #ddd;
+    border-radius: 5px;
+    width: 28px;
+    height: 28px;
+    cursor: pointer;
+    color: #aaa;
+    font-size: 14px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+    transition: all 0.15s;
+  }
+
+  .remove-btn:hover { border-color: #e74c3c; color: #e74c3c; }
+
+  .add-btn {
+    background: none;
+    border: 1px dashed #ddd;
+    border-radius: 6px;
+    padding: 7px 12px;
+    font-size: 12px;
+    color: #999;
+    cursor: pointer;
+    width: 100%;
+    text-align: left;
+    transition: all 0.15s;
+    margin-top: 4px;
+  }
+
+  .add-btn:hover { border-color: #111; color: #111; }
+
+  /* Secret row */
+  .secret-wrap {
+    position: relative;
+    display: flex;
+    align-items: center;
+  }
+
+  .secret-wrap input { padding-right: 36px; }
+
+  .eye-btn {
+    position: absolute;
+    right: 10px;
+    background: none;
+    border: none;
+    cursor: pointer;
+    color: #bbb;
+    font-size: 13px;
+    padding: 0;
+    line-height: 1;
+    transition: color 0.15s;
+  }
+
+  .eye-btn:hover { color: #555; }
+
+  /* Drop zone */
+  .drop-zone {
+    border: 1.5px dashed #ddd;
+    border-radius: 8px;
+    padding: 28px 20px;
+    text-align: center;
+    cursor: pointer;
+    transition: all 0.15s;
+    background: #fafafa;
+  }
+
+  .drop-zone:hover, .drop-zone.dragover {
+    border-color: #111;
+    background: #f0f0f0;
+  }
+
+  .drop-zone.has-file {
+    border-color: #27ae60;
+    border-style: solid;
+    background: #f0faf4;
+  }
+
+  .drop-icon { font-size: 28px; margin-bottom: 8px; }
+
+  .drop-title { font-size: 14px; font-weight: 600; color: #333; margin-bottom: 2px; }
+
+  .drop-sub { font-size: 12px; color: #999; }
 
   .file-info {
     display: none;
     align-items: center;
-    gap: 12px;
+    gap: 10px;
     justify-content: center;
   }
 
   .file-info.visible { display: flex; }
 
-  .file-name {
-    font-family: 'JetBrains Mono', monospace;
-    font-size: 13px;
-    color: var(--success);
-  }
+  .file-name { font-family: monospace; font-size: 13px; color: #27ae60; font-weight: 600; }
 
-  .file-size {
-    font-size: 12px;
-    color: var(--muted);
-  }
+  .file-size { font-size: 12px; color: #999; }
 
-  .clear-file {
-    background: transparent;
+  .clear-btn {
+    background: none;
     border: none;
-    color: var(--muted);
+    color: #bbb;
     cursor: pointer;
-    font-size: 16px;
-    padding: 4px;
-    transition: color 0.2s;
+    font-size: 15px;
+    transition: color 0.15s;
   }
 
-  .clear-file:hover { color: var(--error); }
+  .clear-btn:hover { color: #e74c3c; }
 
   input[type="file"] { display: none; }
 
-  /* Options row */
-  .options-row {
+  /* Options */
+  .options-grid {
     display: flex;
-    gap: 12px;
     flex-wrap: wrap;
-    margin-top: 8px;
+    gap: 8px;
   }
 
-  .checkbox-label {
+  .opt-label {
     display: flex;
     align-items: center;
-    gap: 8px;
+    gap: 6px;
+    font-size: 12px;
+    color: #555;
     cursor: pointer;
-    font-size: 13px;
-    color: var(--muted);
-    transition: color 0.2s;
     user-select: none;
+    padding: 5px 10px;
+    border: 1px solid #e5e5e5;
+    border-radius: 6px;
+    transition: all 0.15s;
+    background: #fafafa;
   }
 
-  .checkbox-label:hover { color: var(--text); }
+  .opt-label:hover { border-color: #111; color: #111; }
 
-  .checkbox-label input[type="checkbox"] {
-    display: none;
-  }
+  .opt-label input[type="checkbox"] { display: none; }
 
-  .custom-check {
-    width: 16px;
-    height: 16px;
-    border: 1px solid var(--border);
-    border-radius: 4px;
+  .opt-check {
+    width: 14px;
+    height: 14px;
+    border: 1.5px solid #ccc;
+    border-radius: 3px;
     display: flex;
     align-items: center;
     justify-content: center;
-    transition: all 0.2s;
+    font-size: 9px;
     flex-shrink: 0;
-    font-size: 10px;
+    transition: all 0.15s;
   }
 
-  .checkbox-label input:checked + .custom-check {
-    background: var(--accent);
-    border-color: var(--accent);
-    color: #000;
+  .opt-label input:checked + .opt-check {
+    background: #111;
+    border-color: #111;
+    color: #fff;
   }
+
+  .native-auth-hint {
+    margin-top: 10px;
+    padding: 9px 12px;
+    background: #fffbf0;
+    border: 1px solid #f0d080;
+    border-radius: 6px;
+    font-size: 12px;
+    color: #7a5c00;
+    line-height: 1.5;
+    display: none;
+  }
+
+  .native-auth-hint.visible { display: block; }
 
   /* Generate button */
   .generate-btn {
     width: 100%;
-    background: var(--accent);
-    color: #000;
+    background: #111;
+    color: #fff;
     border: none;
-    border-radius: 10px;
-    padding: 16px 32px;
-    font-family: 'Syne', sans-serif;
-    font-size: 15px;
-    font-weight: 700;
-    letter-spacing: 0.02em;
+    border-radius: 8px;
+    padding: 12px;
+    font-size: 14px;
+    font-weight: 600;
     cursor: pointer;
-    transition: all 0.2s;
-    margin-top: 24px;
-    position: relative;
-    overflow: hidden;
+    transition: background 0.15s;
+    margin-top: 12px;
   }
 
-  .generate-btn:hover {
-    background: var(--accent2);
-    transform: translateY(-1px);
-    box-shadow: 0 8px 24px rgba(245,166,35,0.3);
-  }
+  .generate-btn:hover { background: #333; }
 
-  .generate-btn:active { transform: translateY(0); }
-
-  .generate-btn:disabled {
-    opacity: 0.4;
-    cursor: not-allowed;
-    transform: none;
-    box-shadow: none;
-  }
+  .generate-btn:disabled { background: #ccc; cursor: not-allowed; }
 
   /* Progress */
   .progress-bar {
-    height: 3px;
-    background: var(--border);
-    border-radius: 2px;
-    margin-top: 16px;
-    overflow: hidden;
+    height: 2px;
+    background: #eee;
+    border-radius: 1px;
+    margin-top: 12px;
     display: none;
+    overflow: hidden;
   }
 
   .progress-bar.visible { display: block; }
 
   .progress-fill {
     height: 100%;
-    background: linear-gradient(90deg, var(--accent), var(--accent2));
-    border-radius: 2px;
+    background: #111;
     width: 0%;
-    transition: width 0.4s ease;
+    transition: width 0.3s ease;
+    border-radius: 1px;
   }
 
   .progress-text {
     font-size: 12px;
-    font-family: 'JetBrains Mono', monospace;
-    color: var(--muted);
-    margin-top: 8px;
+    color: #888;
+    margin-top: 6px;
     display: none;
+    font-family: monospace;
   }
 
   .progress-text.visible { display: block; }
 
-  /* Results */
-  .results-card {
-    display: none;
-    background: var(--surface);
-    border: 1px solid var(--success);
-    border-radius: 16px;
-    padding: 32px;
-    margin-bottom: 32px;
-    position: relative;
-    overflow: hidden;
-    animation: slideUp 0.4s ease;
-  }
-
-  .results-card::before {
-    content: '';
-    position: absolute;
-    top: 0; left: 0; right: 0;
-    height: 2px;
-    background: linear-gradient(90deg, var(--success), transparent);
-  }
-
-  .results-card.visible { display: block; }
-
-  @keyframes slideUp {
-    from { opacity: 0; transform: translateY(20px); }
-    to { opacity: 1; transform: translateY(0); }
-  }
-
-  .context-block {
-    background: var(--surface2);
-    border: 1px solid var(--border);
-    border-left: 3px solid var(--accent);
-    border-radius: 8px;
-    padding: 16px 20px;
-    margin-bottom: 24px;
-    font-size: 14px;
-    line-height: 1.7;
-  }
-
-  .context-block strong {
-    color: var(--accent);
-  }
-
-  /* Summary table */
-  .summary-table {
-    width: 100%;
-    border-collapse: collapse;
-    font-size: 13px;
-    margin-bottom: 24px;
-  }
-
-  .summary-table th {
-    text-align: left;
-    padding: 10px 12px;
-    background: var(--surface2);
-    color: var(--muted);
-    font-size: 11px;
-    letter-spacing: 0.08em;
-    text-transform: uppercase;
-    border-bottom: 1px solid var(--border);
-  }
-
-  .summary-table td {
-    padding: 10px 12px;
-    border-bottom: 1px solid rgba(42,42,58,0.5);
-    vertical-align: middle;
-  }
-
-  .summary-table tr:last-child td { border-bottom: none; }
-  .summary-table tr:hover td { background: rgba(255,255,255,0.02); }
-
-  .method-badge {
-    display: inline-block;
-    padding: 2px 8px;
-    border-radius: 4px;
-    font-family: 'JetBrains Mono', monospace;
-    font-size: 11px;
-    font-weight: 500;
-  }
-
-  .method-GET    { background: rgba(74,222,128,0.15);  color: #4ade80; }
-  .method-POST   { background: rgba(96,165,250,0.15);  color: #60a5fa; }
-  .method-PUT    { background: rgba(251,191,36,0.15);  color: #fbbf24; }
-  .method-PATCH  { background: rgba(167,139,250,0.15); color: #a78bfa; }
-  .method-DELETE { background: rgba(248,113,113,0.15); color: #f87171; }
-
-  .folder-badge {
-    display: inline-block;
-    padding: 2px 8px;
-    border-radius: 4px;
-    font-size: 11px;
-    font-weight: 600;
-    background: rgba(245,166,35,0.15);
-    color: var(--accent);
-  }
-
-  .path-mono {
-    font-family: 'JetBrains Mono', monospace;
-    font-size: 12px;
-    color: var(--text);
-  }
-
-  .desc-text {
-    color: var(--muted);
-    font-size: 12px;
-  }
-
-  /* Download button */
-  .download-btn {
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    gap: 10px;
-    width: 100%;
-    background: var(--success);
-    color: #000;
-    border: none;
-    border-radius: 10px;
-    padding: 16px 32px;
-    font-family: 'Syne', sans-serif;
-    font-size: 15px;
-    font-weight: 700;
-    cursor: pointer;
-    transition: all 0.2s;
-    text-decoration: none;
-  }
-
-  .download-btn:hover {
-    background: #22c55e;
-    transform: translateY(-1px);
-    box-shadow: 0 8px 24px rgba(74,222,128,0.3);
-  }
-
-  .stats-row {
-    display: flex;
-    gap: 24px;
-    margin-bottom: 20px;
-    flex-wrap: wrap;
-  }
-
-  .stat {
-    display: flex;
-    flex-direction: column;
-    gap: 4px;
-  }
-
-  .stat-num {
-    font-size: 28px;
-    font-weight: 800;
-    color: var(--accent);
-    line-height: 1;
-  }
-
-  .stat-label {
-    font-size: 12px;
-    color: var(--muted);
-    text-transform: uppercase;
-    letter-spacing: 0.08em;
-  }
-
   /* Error */
   .error-block {
     display: none;
-    background: rgba(248,113,113,0.1);
-    border: 1px solid rgba(248,113,113,0.3);
-    border-radius: 8px;
-    padding: 14px 18px;
-    font-size: 13px;
-    color: var(--error);
-    font-family: 'JetBrains Mono', monospace;
-    margin-top: 16px;
+    background: #fff5f5;
+    border: 1px solid #fcc;
+    border-radius: 6px;
+    padding: 10px 14px;
+    font-size: 12px;
+    color: #c0392b;
+    font-family: monospace;
+    margin-top: 10px;
   }
 
   .error-block.visible { display: block; }
 
-  /* Footer */
-  footer {
-    border-top: 1px solid var(--border);
-    padding: 24px 0;
-    margin-top: 16px;
+  /* Results */
+  .results-section {
+    display: none;
+    background: #fff;
+    border: 1px solid #27ae60;
+    border-radius: 10px;
+    padding: 20px;
+    margin-bottom: 12px;
+    animation: fadeIn 0.3s ease;
+  }
+
+  .results-section.visible { display: block; }
+
+  @keyframes fadeIn {
+    from { opacity: 0; transform: translateY(8px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
+
+  /* Stats */
+  .stats-row {
+    display: flex;
+    gap: 20px;
+    flex-wrap: wrap;
+    margin-bottom: 16px;
+    padding-bottom: 16px;
+    border-bottom: 1px solid #f0f0f0;
+  }
+
+  .stat-num { font-size: 24px; font-weight: 700; color: #111; line-height: 1; }
+  .stat-label { font-size: 11px; color: #999; text-transform: uppercase; letter-spacing: 0.06em; margin-top: 2px; }
+
+  /* Context */
+  .context-note {
+    font-size: 12px;
+    color: #555;
+    line-height: 1.6;
+    padding: 10px 12px;
+    background: #f8f8f8;
+    border-radius: 6px;
+    margin-bottom: 16px;
+  }
+
+  .context-note strong { color: #111; }
+
+  /* Table */
+  .table-wrap { overflow-x: auto; margin-bottom: 16px; }
+
+  table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 12px;
+  }
+
+  th {
+    text-align: left;
+    padding: 7px 10px;
+    background: #f8f8f8;
+    color: #999;
+    font-size: 10px;
+    font-weight: 600;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    border-bottom: 1px solid #eee;
+  }
+
+  td {
+    padding: 8px 10px;
+    border-bottom: 1px solid #f5f5f5;
+    color: #333;
+    vertical-align: middle;
+  }
+
+  tr:last-child td { border-bottom: none; }
+  tr:hover td { background: #fafafa; }
+
+  .badge {
+    display: inline-block;
+    padding: 2px 7px;
+    border-radius: 4px;
+    font-size: 10px;
+    font-weight: 600;
+    font-family: monospace;
+  }
+
+  .m-GET    { background: #e8f8ee; color: #27ae60; }
+  .m-POST   { background: #e8f0ff; color: #2563eb; }
+  .m-PUT    { background: #fff8e0; color: #d97706; }
+  .m-PATCH  { background: #f3eeff; color: #7c3aed; }
+  .m-DELETE { background: #fff0f0; color: #dc2626; }
+
+  .folder-badge { background: #f0f0f0; color: #555; }
+  .body-badge   { background: #eef; color: #446; }
+  .body-none    { color: #ccc; }
+
+  /* Download */
+  .download-row {
+    display: flex;
+    gap: 8px;
+    flex-wrap: wrap;
+    margin-bottom: 10px;
+  }
+
+  .dl-btn {
     display: flex;
     align-items: center;
-    justify-content: space-between;
-    flex-wrap: gap;
-    gap: 12px;
-  }
-
-  .footer-note {
-    font-size: 12px;
-    color: var(--muted);
-    font-family: 'JetBrains Mono', monospace;
-  }
-
-  .footer-badge {
-    font-size: 11px;
-    color: var(--muted);
-    background: var(--surface);
-    border: 1px solid var(--border);
-    border-radius: 20px;
-    padding: 4px 12px;
-  }
-
-  /* Divider */
-  .divider {
-    height: 1px;
-    background: var(--border);
-    margin: 24px 0;
-  }
-
-  /* How-to section */
-  .how-to {
-    display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
-    gap: 16px;
-    margin-top: 8px;
-  }
-
-  .step-item {
-    background: var(--surface2);
-    border: 1px solid var(--border);
-    border-radius: 10px;
-    padding: 16px;
-  }
-
-  .step-num {
-    font-size: 11px;
-    font-weight: 700;
-    color: var(--accent);
-    letter-spacing: 0.1em;
-    margin-bottom: 6px;
-  }
-
-  .step-text {
+    gap: 7px;
+    flex: 1;
+    min-width: 160px;
+    background: #111;
+    color: #fff;
+    border: none;
+    border-radius: 7px;
+    padding: 10px 16px;
     font-size: 13px;
-    color: var(--muted);
-    line-height: 1.5;
+    font-weight: 600;
+    cursor: pointer;
+    transition: background 0.15s;
   }
 
-  @media (max-width: 600px) {
-    .card { padding: 20px; }
-    .url-row { flex-wrap: wrap; }
-    .summary-table { font-size: 12px; }
+  .dl-btn:hover { background: #333; }
+
+  .dl-btn.outline {
+    background: #fff;
+    color: #111;
+    border: 1.5px solid #ddd;
+  }
+
+  .dl-btn.outline:hover { border-color: #111; background: #f8f8f8; }
+
+  /* Newman */
+  .newman-block {
+    border: 1px solid #eee;
+    border-radius: 7px;
+    overflow: hidden;
+  }
+
+  .newman-block summary {
+    padding: 8px 12px;
+    background: #f8f8f8;
+    cursor: pointer;
+    font-size: 12px;
+    color: #888;
+    list-style: none;
+    user-select: none;
+    transition: color 0.15s;
+  }
+
+  .newman-block summary::-webkit-details-marker { display: none; }
+  .newman-block summary:hover { color: #111; }
+  .newman-block[open] summary { color: #111; border-bottom: 1px solid #eee; }
+
+  .newman-code {
+    padding: 14px;
+    background: #1a1a1a;
+    color: #d4d4d4;
+    font-family: 'SF Mono', 'Fira Mono', monospace;
+    font-size: 11px;
+    line-height: 1.7;
+    white-space: pre-wrap;
+    word-break: break-all;
+  }
+
+  /* Footer */
+  footer {
+    text-align: center;
+    font-size: 11px;
+    color: #bbb;
+    margin-top: 32px;
   }
 </style>
 </head>
 <body>
-<div class="container">
+<div class="page">
 
-  <header>
-    <div class="logo-row">
-      <span class="logo-badge">AUGMONT</span>
-      <span class="tool-label">// api-tools / har-converter</span>
-    </div>
-    <h1>HAR → <span>Postman</span><br>Converter</h1>
-    <p class="subtitle">Export HAR from Chrome DevTools, drop it here, get a ready-to-import Postman collection with HMAC signatures.</p>
-  </header>
-
-  <!-- How to use -->
-  <div class="card" style="margin-top:32px;">
-    <div class="section-label">How to use</div>
-    <div class="how-to">
-      <div class="step-item">
-        <div class="step-num">STEP 01</div>
-        <div class="step-text">Open Chrome DevTools → Network tab → perform your API flow</div>
-      </div>
-      <div class="step-item">
-        <div class="step-num">STEP 02</div>
-        <div class="step-text">Right-click any request → "Save all as HAR with content"</div>
-      </div>
-      <div class="step-item">
-        <div class="step-num">STEP 03</div>
-        <div class="step-text">Enter your base URL, drop the HAR file, click Generate</div>
-      </div>
-      <div class="step-item">
-        <div class="step-num">STEP 04</div>
-        <div class="step-text">Download the .json → Import into Postman → Set AUTH_TOKEN → Done</div>
-      </div>
-    </div>
+  <div class="header">
+    <div class="header-tag">Augmont · API Tools</div>
+    <h1>HAR → Postman Converter</h1>
+    <p>Drop a Chrome DevTools HAR export and get a ready-to-import Postman collection.</p>
   </div>
 
-  <!-- Config card -->
-  <div class="card">
-    <div class="section-label">Configuration</div>
+  <!-- Configuration -->
+  <div class="section">
+    <div class="section-title">Configuration</div>
 
     <!-- Base URLs -->
-    <div style="margin-bottom:24px;">
-      <div style="font-size:13px;color:var(--muted);margin-bottom:12px;">Base URL(s) — first URL becomes <code style="color:var(--accent);font-family:'JetBrains Mono',monospace;">{{BASE_URL}}</code>, others are hardcoded</div>
+    <div class="field">
+      <div class="field-label">Base URL(s) — first becomes <code>{{BASE_URL}}</code></div>
       <div id="urlContainer">
-        <div class="url-row" data-index="0">
+        <div class="url-row">
           <span class="url-tag">PRIMARY</span>
           <input type="text" class="url-input" placeholder="https://gold-loan-backend-api.gfau.augmont.com" value="https://gold-loan-backend-api.gfau.augmont.com">
         </div>
       </div>
-      <button class="add-url-btn" onclick="addUrlRow()">+ Add another base URL</button>
+      <button class="add-btn" onclick="addUrlRow()">+ Add URL</button>
     </div>
 
-    <div class="divider"></div>
-
-    <!-- HAR drop zone -->
-    <div style="margin-bottom:24px;">
-      <div style="font-size:13px;color:var(--muted);margin-bottom:12px;">HAR File</div>
-      <div class="drop-zone" id="dropZone" onclick="document.getElementById('harFile').click()">
-        <div id="dropDefault">
-          <span class="drop-icon">📂</span>
-          <div class="drop-title">Drop HAR file here</div>
-          <div class="drop-sub">or click to browse — exported from Chrome DevTools</div>
-        </div>
-        <div class="file-info" id="fileInfo">
-          <span>✅</span>
-          <span class="file-name" id="fileName"></span>
-          <span class="file-size" id="fileSize"></span>
-          <button class="clear-file" onclick="clearFile(event)">✕</button>
+    <!-- HMAC Secret -->
+    <div class="field">
+      <div class="field-label">HMAC Secret — seeds <code>{{HMAC_SECRET}}</code> variable (optional)</div>
+      <div class="url-row">
+        <span class="url-tag secret">SECRET</span>
+        <div class="secret-wrap" style="flex:1;">
+          <input type="password" id="hmacSecret" placeholder="Leave blank to fill in Postman after import">
+          <button class="eye-btn" onclick="toggleSecret()">👁</button>
         </div>
       </div>
-      <input type="file" id="harFile" accept=".har,application/json" onchange="handleFileSelect(event)">
     </div>
 
-    <div class="divider"></div>
+    <!-- Environment Name -->
+    <div class="field">
+      <div class="field-label">Environment Name</div>
+      <input type="text" id="envName" placeholder="Augmont — gold-loan — dev">
+    </div>
+  </div>
 
-    <!-- Options -->
-    <div>
-      <div style="font-size:13px;color:var(--muted);margin-bottom:12px;">Options</div>
-      <div class="options-row">
-        <label class="checkbox-label">
-          <input type="checkbox" id="optDedup" checked>
-          <span class="custom-check">✓</span>
-          Remove consecutive duplicates
-        </label>
-        <label class="checkbox-label">
-          <input type="checkbox" id="optFolders" checked>
-          <span class="custom-check">✓</span>
-          Organise into folders
-        </label>
-        <label class="checkbox-label">
-          <input type="checkbox" id="optMaskAuth" checked>
-          <span class="custom-check">✓</span>
-          Mask auth tokens
-        </label>
-        <label class="checkbox-label">
-          <input type="checkbox" id="optStripBrowser" checked>
-          <span class="custom-check">✓</span>
-          Strip browser headers
-        </label>
+  <!-- HAR File -->
+  <div class="section">
+    <div class="section-title">HAR File</div>
+    <div class="drop-zone" id="dropZone" onclick="document.getElementById('harFile').click()">
+      <div id="dropDefault">
+        <div class="drop-icon">📂</div>
+        <div class="drop-title">Drop HAR file or click to browse</div>
+        <div class="drop-sub">Export from Chrome DevTools → Network → Save all as HAR</div>
+      </div>
+      <div class="file-info" id="fileInfo">
+        <span>✅</span>
+        <span class="file-name" id="fileName"></span>
+        <span class="file-size" id="fileSize"></span>
+        <button class="clear-btn" onclick="clearFile(event)">✕</button>
       </div>
     </div>
+    <input type="file" id="harFile" accept=".har,application/json" onchange="handleFileSelect(event)">
+  </div>
 
-    <!-- Generate button -->
+  <!-- Options -->
+  <div class="section">
+    <div class="section-title">Options</div>
+    <div class="options-grid">
+      <label class="opt-label">
+        <input type="checkbox" id="optDedup" checked>
+        <span class="opt-check">✓</span>Remove duplicates
+      </label>
+      <label class="opt-label">
+        <input type="checkbox" id="optFolders" checked>
+        <span class="opt-check">✓</span>Organise folders
+      </label>
+      <label class="opt-label">
+        <input type="checkbox" id="optMaskAuth" checked>
+        <span class="opt-check">✓</span>Mask auth tokens
+      </label>
+      <label class="opt-label">
+        <input type="checkbox" id="optStripBrowser" checked>
+        <span class="opt-check">✓</span>Strip browser headers
+      </label>
+      <label class="opt-label">
+        <input type="checkbox" id="optTestScripts" checked>
+        <span class="opt-check">✓</span>Add test scripts
+      </label>
+      <label class="opt-label">
+        <input type="checkbox" id="optExamples" checked>
+        <span class="opt-check">✓</span>Capture examples
+      </label>
+      <label class="opt-label">
+        <input type="checkbox" id="optNativeAuth" checked>
+        <span class="opt-check">✓</span>Postman native auth
+      </label>
+    </div>
+    <div class="native-auth-hint visible" id="nativeAuthHint">
+      ℹ Authorization is managed at the collection level (Bearer Token). In Postman, check the <strong>Authorization tab</strong> → "Inherited from collection". Set <strong>AUTH_TOKEN</strong> in your environment variables.
+    </div>
+
     <button class="generate-btn" id="generateBtn" onclick="generate()" disabled>
       Generate Postman Collection
     </button>
 
-    <div class="progress-bar" id="progressBar">
-      <div class="progress-fill" id="progressFill"></div>
-    </div>
+    <div class="progress-bar" id="progressBar"><div class="progress-fill" id="progressFill"></div></div>
     <div class="progress-text" id="progressText"></div>
     <div class="error-block" id="errorBlock"></div>
   </div>
 
   <!-- Results -->
-  <div class="results-card" id="resultsCard">
-    <div class="section-label">Collection Ready</div>
+  <div class="results-section" id="resultsCard">
+    <div class="section-title">Collection Ready</div>
 
     <div class="stats-row" id="statsRow"></div>
 
-    <div class="context-block" id="contextBlock"></div>
+    <div class="context-note" id="contextBlock"></div>
 
-    <div style="overflow-x:auto;">
-      <table class="summary-table" id="summaryTable">
+    <div class="table-wrap">
+      <table>
         <thead>
           <tr>
-            <th>#</th>
-            <th>Folder</th>
-            <th>Method</th>
-            <th>Path</th>
-            <th>Description</th>
+            <th>#</th><th>Folder</th><th>Method</th><th>Path</th><th>Body</th>
           </tr>
         </thead>
         <tbody id="summaryBody"></tbody>
       </table>
     </div>
 
-    <button class="download-btn" id="downloadBtn">
-      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
-      Download Postman Collection
-    </button>
+    <div class="download-row">
+      <button class="dl-btn" id="downloadCollectionBtn">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+        Collection JSON
+      </button>
+      <button class="dl-btn outline" id="downloadEnvBtn">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+        Environment JSON
+      </button>
+    </div>
+
+    <details class="newman-block" id="newmanDetails">
+      <summary>▶ Run with Newman (CI/CD)</summary>
+      <pre class="newman-code" id="newmanCode"></pre>
+    </details>
   </div>
 
-  <footer>
-    <span class="footer-note">// All processing happens in your browser — no data is uploaded anywhere</span>
-    <span class="footer-badge">Augmont Engineering</span>
-  </footer>
+  <footer>All processing happens in your browser — no data uploaded · Augmont Engineering</footer>
 
 </div>
 
@@ -781,9 +687,9 @@
 // ─── State ───────────────────────────────────────────────────────────────────
 let harData = null;
 let collectionBlob = null;
+let envBlob = null;
 let collectionFilename = '';
-
-const HMAC_SECRET = '3056301006072a8648ce3d020106052b8104000a0342000499c5f442c3264bcdfb093b0bc820e3f0f6546972856ebec2f8ccc03f49abdb47ffcfcaf4f37e0ec53050760e74014767e30a8a3e891f4db8c83fa27627898f15';
+let envFilename = '';
 
 const STRIP_HEADERS = new Set([
   'host','content-length',':authority',':method',':path',':scheme',
@@ -817,6 +723,37 @@ const PRE_REQUEST_SCRIPT = [
   "console.log(\"✅ SIGNATURE:\", signature);"
 ];
 
+const COLLECTION_PRE_REQUEST = [
+  "pm.collectionVariables.set(\"REQUEST_TIMESTAMP\", new Date().toISOString());"
+];
+
+function buildTestScript(method, path, schemaKeys, isAuthEndpoint) {
+  const lines = [
+    "pm.test(\"Status is 2xx\", () => { pm.expect(pm.response.code).to.be.within(200, 299); });",
+    "pm.test(\"Response time < 3000ms\", () => { pm.expect(pm.response.responseTime).to.be.below(3000); });",
+    "pm.test(\"Content-Type is JSON\", () => { pm.expect(pm.response.headers.get(\"Content-Type\")).to.include(\"application/json\"); });"
+  ];
+  if (schemaKeys && schemaKeys.length > 0) {
+    lines.push(
+      "try {",
+      `    const expectedKeys = ${JSON.stringify(schemaKeys)};`,
+      "    const jsonData = pm.response.json();",
+      "    pm.test(\"Response shape\", () => { expectedKeys.forEach(k => pm.expect(jsonData).to.have.property(k)); });",
+      "} catch(e) {}"
+    );
+  }
+  if (isAuthEndpoint) {
+    lines.push(
+      "try {",
+      "    const json = pm.response.json();",
+      "    const token = json && (json.token || (json.data && json.data.token) || json.access_token || json.accessToken);",
+      "    if (token) { pm.collectionVariables.set(\"AUTH_TOKEN\", token); console.log(\"AUTH_TOKEN captured\"); }",
+      "} catch(e) {}"
+    );
+  }
+  return lines;
+}
+
 // ─── URL rows ─────────────────────────────────────────────────────────────────
 let urlCount = 1;
 
@@ -825,62 +762,49 @@ function addUrlRow() {
   const container = document.getElementById('urlContainer');
   const div = document.createElement('div');
   div.className = 'url-row';
-  div.dataset.index = urlCount - 1;
   div.innerHTML = `
-    <span class="url-tag" style="color:var(--muted);">SECONDARY</span>
-    <input type="text" class="url-input" placeholder="https://other-service.augmont.com">
-    <button class="btn-icon" onclick="removeUrlRow(this)" title="Remove">✕</button>
+    <span class="url-tag secondary">URL</span>
+    <input type="text" class="url-input" placeholder="https://other-service.augmont.com" style="flex:1;">
+    <button class="remove-btn" onclick="this.closest('.url-row').remove()">✕</button>
   `;
   container.appendChild(div);
 }
 
-function removeUrlRow(btn) {
-  btn.closest('.url-row').remove();
+function getBaseUrls() {
+  return Array.from(document.querySelectorAll('#urlContainer .url-input'))
+    .map(i => i.value.trim().replace(/\/$/, '')).filter(Boolean);
 }
 
-function getBaseUrls() {
-  const inputs = document.querySelectorAll('#urlContainer .url-input');
-  return Array.from(inputs).map(i => i.value.trim().replace(/\/$/, '')).filter(Boolean);
+function toggleSecret() {
+  const i = document.getElementById('hmacSecret');
+  i.type = i.type === 'password' ? 'text' : 'password';
 }
 
 // ─── File handling ────────────────────────────────────────────────────────────
 const dropZone = document.getElementById('dropZone');
-
 dropZone.addEventListener('dragover', e => { e.preventDefault(); dropZone.classList.add('dragover'); });
 dropZone.addEventListener('dragleave', () => dropZone.classList.remove('dragover'));
 dropZone.addEventListener('drop', e => {
-  e.preventDefault();
-  dropZone.classList.remove('dragover');
-  const file = e.dataTransfer.files[0];
-  if (file) processFile(file);
+  e.preventDefault(); dropZone.classList.remove('dragover');
+  if (e.dataTransfer.files[0]) processFile(e.dataTransfer.files[0]);
 });
 
-function handleFileSelect(e) {
-  const file = e.target.files[0];
-  if (file) processFile(file);
-}
+function handleFileSelect(e) { if (e.target.files[0]) processFile(e.target.files[0]); }
 
 function processFile(file) {
   const reader = new FileReader();
   reader.onload = e => {
     try {
       harData = JSON.parse(e.target.result);
-      showFileInfo(file.name, file.size);
-      checkReady();
-    } catch {
-      showError('Invalid HAR file — could not parse JSON.');
-    }
+      document.getElementById('dropDefault').style.display = 'none';
+      document.getElementById('fileInfo').classList.add('visible');
+      document.getElementById('fileName').textContent = file.name;
+      document.getElementById('fileSize').textContent = fmtBytes(file.size);
+      dropZone.classList.add('has-file');
+      document.getElementById('generateBtn').disabled = false;
+    } catch { showError('Invalid HAR file — could not parse JSON.'); }
   };
   reader.readAsText(file);
-}
-
-function showFileInfo(name, size) {
-  document.getElementById('dropDefault').style.display = 'none';
-  const fi = document.getElementById('fileInfo');
-  fi.classList.add('visible');
-  document.getElementById('fileName').textContent = name;
-  document.getElementById('fileSize').textContent = formatBytes(size);
-  dropZone.classList.add('has-file');
 }
 
 function clearFile(e) {
@@ -890,20 +814,15 @@ function clearFile(e) {
   document.getElementById('dropDefault').style.display = 'block';
   document.getElementById('fileInfo').classList.remove('visible');
   dropZone.classList.remove('has-file');
-  checkReady();
+  document.getElementById('generateBtn').disabled = true;
 }
 
-function checkReady() {
-  document.getElementById('generateBtn').disabled = !harData;
-}
-
-function formatBytes(b) {
+function fmtBytes(b) {
   if (b < 1024) return b + ' B';
   if (b < 1048576) return (b/1024).toFixed(1) + ' KB';
   return (b/1048576).toFixed(1) + ' MB';
 }
 
-// ─── Progress ─────────────────────────────────────────────────────────────────
 function setProgress(pct, text) {
   document.getElementById('progressBar').classList.add('visible');
   document.getElementById('progressText').classList.add('visible');
@@ -913,349 +832,320 @@ function setProgress(pct, text) {
 
 function showError(msg) {
   const el = document.getElementById('errorBlock');
-  el.textContent = '⚠ ' + msg;
-  el.classList.add('visible');
+  el.textContent = '⚠ ' + msg; el.classList.add('visible');
 }
 
-function clearError() {
-  document.getElementById('errorBlock').classList.remove('visible');
-}
+function clearError() { document.getElementById('errorBlock').classList.remove('visible'); }
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
+function isValidJSON(s) { try { JSON.parse(s); return true; } catch { return false; } }
+
 function inferFolder(urlPath) {
-  const segments = urlPath.replace(/^\//, '').split('/');
-  // skip 'api' prefix if present
-  const seg = segments[0] === 'api' ? segments[1] : segments[0];
+  const segs = urlPath.replace(/^\//, '').split('/');
+  const seg = segs[0] === 'api' ? segs[1] : segs[0];
   if (!seg) return 'General';
-  return seg
-    .split(/[-_]/)
-    .map(w => w.charAt(0).toUpperCase() + w.slice(1))
-    .join(' ');
+  return seg.split(/[-_]/).map(w => w.charAt(0).toUpperCase() + w.slice(1)).join(' ');
 }
 
-function inferDescription(method, path, body) {
+function inferDesc(method, path) {
   const parts = path.replace(/^\/api\//, '').split('/');
   const last = parts[parts.length - 1].replace(/[-_]/g, ' ');
   const folder = parts[0] ? parts[0].replace(/[-_]/g, ' ') : '';
-  const methodMap = {
-    GET: 'Fetch',
-    POST: 'Create/submit',
-    PUT: 'Update',
-    PATCH: 'Partially update',
-    DELETE: 'Delete'
-  };
-  const verb = methodMap[method] || method.toLowerCase();
-  return `${verb} ${last}${folder && folder !== last ? ' for ' + folder : ''}`;
+  const verbs = { GET:'Fetch', POST:'Create/submit', PUT:'Update', PATCH:'Partially update', DELETE:'Delete' };
+  return `${verbs[method] || method} ${last}${folder && folder !== last ? ' for ' + folder : ''}`;
 }
 
-function getPathFromUrl(fullUrl, baseUrls) {
+function getPath(fullUrl, baseUrls) {
   for (const base of baseUrls) {
     if (fullUrl.startsWith(base)) {
-      let path = fullUrl.slice(base.length).split('?')[0];
-      path = path.replace(/\/\/+/g, '/');
-      if (!path.startsWith('/')) path = '/' + path;
-      return path;
+      let p = fullUrl.slice(base.length).split('?')[0].replace(/\/\/+/g, '/');
+      return p.startsWith('/') ? p : '/' + p;
     }
   }
-  // Secondary URL — extract path
-  try {
-    const u = new URL(fullUrl);
-    return u.pathname.replace(/\/\/+/g, '/');
-  } catch { return '/'; }
+  try { return new URL(fullUrl).pathname.replace(/\/\/+/g, '/'); } catch { return '/'; }
 }
 
-function urlToPostmanUrl(rawUrl, primaryBase) {
-  let urlStr = rawUrl;
-  const isPrimary = urlStr.startsWith(primaryBase);
-  
+function toPostmanUrl(rawUrl, primaryBase) {
+  const isPrimary = rawUrl.startsWith(primaryBase);
   try {
-    const u = new URL(urlStr);
-    let pathname = u.pathname.replace(/\/\/+/g, '/');
-    const pathParts = pathname.replace(/^\//, '').split('/').filter(Boolean);
-    const queryParams = [];
-    u.searchParams.forEach((v, k) => queryParams.push({ key: k, value: v }));
-    
-    let rawFull, host;
-    if (isPrimary) {
-      rawFull = `{{BASE_URL}}/${pathParts.join('/')}`;
-      if (queryParams.length) rawFull += '?' + queryParams.map(p => `${p.key}=${p.value}`).join('&');
-      host = ['{{BASE_URL}}'];
-    } else {
-      rawFull = `${u.origin}/${pathParts.join('/')}`;
-      if (queryParams.length) rawFull += '?' + queryParams.map(p => `${p.key}=${p.value}`).join('&');
-      host = [u.origin];
-    }
-    
-    const result = { raw: rawFull, host, path: pathParts };
-    if (queryParams.length) result.query = queryParams;
+    const u = new URL(rawUrl);
+    const parts = u.pathname.replace(/\/\/+/g, '/').replace(/^\//, '').split('/').filter(Boolean);
+    const query = [];
+    u.searchParams.forEach((v, k) => query.push({ key: k, value: v }));
+    const origin = isPrimary ? '{{BASE_URL}}' : u.origin;
+    let raw = `${origin}/${parts.join('/')}`;
+    if (query.length) raw += '?' + query.map(p => `${p.key}=${p.value}`).join('&');
+    const result = { raw, host: [origin], path: parts };
+    if (query.length) result.query = query;
     return result;
-  } catch {
-    return { raw: isPrimary ? `{{BASE_URL}}` : urlStr, host: ['{{BASE_URL}}'], path: [] };
-  }
+  } catch { return { raw: isPrimary ? '{{BASE_URL}}' : rawUrl, host: ['{{BASE_URL}}'], path: [] }; }
 }
 
-function processHeaders(harHeaders, hasAuth) {
+function buildBody(req) {
+  const pd = req.postData;
+  if (!pd) return { bodyObj: null, bodyType: null };
+  const mime = (pd.mimeType || '').toLowerCase();
+  if (mime.includes('json') || isValidJSON(pd.text))
+    return { bodyObj: { mode: 'raw', raw: pd.text, options: { raw: { language: 'json' } } }, bodyType: 'JSON' };
+  if (mime.includes('x-www-form-urlencoded'))
+    return { bodyObj: { mode: 'urlencoded', urlencoded: (pd.params||[]).map(p => ({ key: p.name, value: p.value||'' })) }, bodyType: 'form' };
+  if (mime.includes('multipart'))
+    return { bodyObj: { mode: 'formdata', formdata: (pd.params||[]).map(p => ({ key: p.name, value: p.value||'', type: p.fileName?'file':'text', ...(p.fileName?{src:p.fileName}:{}) })) }, bodyType: 'multipart' };
+  if (pd.text) return { bodyObj: { mode: 'raw', raw: pd.text }, bodyType: 'raw' };
+  return { bodyObj: null, bodyType: null };
+}
+
+function processHeaders(harHeaders, useNativeAuth) {
   const optMask = document.getElementById('optMaskAuth').checked;
   const optStrip = document.getElementById('optStripBrowser').checked;
   const headers = [];
-  let foundAuth = false;
+  let hasAuth = false;
 
-  // STEP A — Authorization first
   for (const h of harHeaders) {
     const key = h.name.toLowerCase();
-    if (key === 'authorization') {
-      foundAuth = true;
-      if (optMask) {
-        headers.push({ key: 'authorization', value: 'Bearer {{AUTH_TOKEN}}' });
-      }
-      break;
-    }
-  }
-
-  // STEP B+C — rest of headers
-  for (const h of harHeaders) {
-    const key = h.name.toLowerCase();
-    if (key === 'authorization') continue; // already handled
-    if (key === 'signature') continue; // injected by script
+    if (key === 'authorization') { hasAuth = true; continue; } // always skip — handled by auth block or below
+    if (key === 'signature') continue;
     if (optStrip && STRIP_HEADERS.has(key)) continue;
-
-    // mask sensitive headers
     if (optMask && /token|secret|api-key|apikey|x-api-key/.test(key)) {
-      const varName = h.name.toUpperCase().replace(/-/g, '_');
-      headers.push({ key: h.name, value: `{{${varName}}}` });
-      continue;
+      headers.push({ key: h.name, value: `{{${h.name.toUpperCase().replace(/-/g,'_')}}}` }); continue;
     }
-
-    // skip raw JWT values that slipped through
     if (optMask && h.value && h.value.startsWith('eyJ')) continue;
-
     headers.push({ key: h.name, value: h.value });
   }
 
-  return headers;
+  // If not using native auth, re-add authorization as a placeholder header
+  if (!useNativeAuth && hasAuth) {
+    const optMask = document.getElementById('optMaskAuth').checked;
+    headers.unshift({ key: 'authorization', value: optMask ? 'Bearer {{AUTH_TOKEN}}' : '{{AUTH_TOKEN}}' });
+  }
+
+  return { headers, hasAuth };
+}
+
+function generateUUID() {
+  if (typeof crypto !== 'undefined' && crypto.randomUUID) return crypto.randomUUID();
+  return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, c => {
+    const r = Math.random() * 16 | 0;
+    return (c === 'x' ? r : (r & 0x3 | 0x8)).toString(16);
+  });
 }
 
 // ─── Main generator ───────────────────────────────────────────────────────────
 async function generate() {
   clearError();
-  collectionBlob = null;
+  collectionBlob = envBlob = null;
 
   const baseUrls = getBaseUrls();
-  if (!baseUrls.length) { showError('Please enter at least one base URL.'); return; }
-  if (!harData) { showError('Please upload a HAR file.'); return; }
+  if (!baseUrls.length) { showError('Enter at least one base URL.'); return; }
+  if (!harData) { showError('Upload a HAR file.'); return; }
 
-  const primaryBase = baseUrls[0];
-  const optDedup = document.getElementById('optDedup').checked;
-  const optFolders = document.getElementById('optFolders').checked;
+  const primaryBase   = baseUrls[0];
+  const optDedup      = document.getElementById('optDedup').checked;
+  const optFolders    = document.getElementById('optFolders').checked;
+  const optTestScripts = document.getElementById('optTestScripts').checked;
+  const optExamples   = document.getElementById('optExamples').checked;
+  const optNativeAuth = document.getElementById('optNativeAuth').checked;
+  const hmacSecret    = document.getElementById('hmacSecret').value.trim();
+  const domain        = primaryBase.replace(/https?:\/\//, '').split('/')[0].split('.')[0];
+  const today         = new Date().toISOString().split('T')[0];
+  let envName         = document.getElementById('envName').value.trim() || `Augmont — ${domain} — dev`;
 
   document.getElementById('generateBtn').disabled = true;
   document.getElementById('resultsCard').classList.remove('visible');
 
-  setProgress(10, 'Parsing HAR entries...');
+  setProgress(10, 'Parsing HAR...');
   await tick();
 
-  // ── Step 1: Filter entries
   const entries = harData?.log?.entries || [];
-  let filtered = entries.filter(e => {
-    const url = e.request?.url || '';
-    return baseUrls.some(base => url.startsWith(base));
-  });
+  let filtered = entries.filter(e => baseUrls.some(b => (e.request?.url || '').startsWith(b)));
 
-  setProgress(25, `Found ${filtered.length} matching requests. Deduplicating...`);
+  setProgress(25, `Found ${filtered.length} requests...`);
   await tick();
 
-  // ── Remove consecutive duplicates
   if (optDedup) {
     const deduped = [];
-    for (let i = 0; i < filtered.length; i++) {
-      const curr = filtered[i];
+    for (const curr of filtered) {
       const prev = deduped[deduped.length - 1];
-      const currKey = `${curr.request.method}::${curr.request.url.split('?')[0]}`;
-      const prevKey = prev ? `${prev.request.method}::${prev.request.url.split('?')[0]}` : null;
-      if (currKey !== prevKey) deduped.push(curr);
+      const k = `${curr.request.method}::${curr.request.url.split('?')[0]}`;
+      const pk = prev ? `${prev.request.method}::${prev.request.url.split('?')[0]}` : null;
+      if (k !== pk) deduped.push(curr);
     }
-    const removed = filtered.length - deduped.length;
     filtered = deduped;
-    if (removed > 0) setProgress(35, `Removed ${removed} consecutive duplicate(s). Building collection...`);
   }
 
-  setProgress(50, 'Building Postman requests...');
+  setProgress(50, 'Building requests...');
   await tick();
 
   if (!filtered.length) {
-    showError(`No requests matched the base URL(s): ${baseUrls.join(', ')}`);
+    showError(`No requests matched: ${baseUrls.join(', ')}`);
     document.getElementById('generateBtn').disabled = false;
     return;
   }
 
-  // ── Step 2: Build requests
-  const folderMap = {}; // folderName → [items]
-  const folderOrder = [];
-  const summaryRows = [];
-  let reqIndex = 1;
+  const folderMap = {}, folderOrder = [], summaryRows = [];
+  let reqIndex = 1, withExamples = 0, withTests = 0, authEndpoints = [];
 
   for (const entry of filtered) {
-    const req = entry.request;
+    const req    = entry.request;
     const method = req.method.toUpperCase();
-    const rawUrl = req.url;
+    const path   = getPath(req.url, baseUrls);
+    const folder = optFolders ? inferFolder(path) : 'All';
+    const isAuth = /\/(login|signin|sign-in|auth|token|refresh)(\?|$)/i.test(path);
+    if (isAuth) authEndpoints.push(path);
 
-    const path = getPathFromUrl(rawUrl, baseUrls);
-    const folderName = optFolders ? inferFolder(path) : 'All Requests';
+    const { headers } = processHeaders(req.headers, optNativeAuth);
+    const { bodyObj, bodyType } = buildBody(req);
+    const postmanUrl = toPostmanUrl(req.url, primaryBase);
+    const desc = inferDesc(method, path);
 
-    // Headers
-    const hasAuth = req.headers.some(h => h.name.toLowerCase() === 'authorization');
-    const headers = processHeaders(req.headers, hasAuth);
-
-    // Body
-    let bodyObj = null;
-    if (['POST','PUT','PATCH'].includes(method) && req.postData?.text) {
-      try {
-        JSON.parse(req.postData.text); // validate
-        bodyObj = {
-          mode: 'raw',
-          raw: req.postData.text,
-          options: { raw: { language: 'json' } }
-        };
-      } catch {
-        bodyObj = { mode: 'raw', raw: req.postData.text };
+    // Response example
+    let responseEx = null, schemaKeys = [];
+    if (optExamples) {
+      const resp = entry.response;
+      const body = resp?.content?.text;
+      const status = resp?.status;
+      const mime = resp?.content?.mimeType || 'application/json';
+      if (body && status) {
+        withExamples++;
+        const isJson = mime.includes('json') || isValidJSON(body);
+        if (isJson) {
+          try {
+            const p = JSON.parse(body);
+            if (p && typeof p === 'object' && !Array.isArray(p)) schemaKeys = Object.keys(p).slice(0, 10);
+          } catch {}
+        }
+        responseEx = [{ name: `${desc} — ${status}`, originalRequest: { method, header: headers, url: postmanUrl, ...(bodyObj?{body:bodyObj}:{}) }, status: resp.statusText||'OK', code: status, _postman_previewlanguage: isJson?'json':'text', header: [{ key:'Content-Type', value: mime }], body }];
       }
     }
 
-    // URL
-    const postmanUrl = urlToPostmanUrl(rawUrl, primaryBase);
+    // Test script
+    let testEvent = null;
+    if (optTestScripts) {
+      withTests++;
+      testEvent = { listen: 'test', script: { type: 'text/javascript', exec: buildTestScript(method, path, schemaKeys, isAuth) } };
+    }
 
-    // Description
-    const desc = inferDescription(method, path, req.postData?.text);
-
-    // Request item
     const item = {
       name: desc,
-      description: desc,
-      request: {
-        method,
-        header: headers,
-        url: postmanUrl
-      },
-      event: [{
-        listen: 'prerequest',
-        script: {
-          type: 'text/javascript',
-          exec: PRE_REQUEST_SCRIPT
-        }
-      }]
+      description: `${desc} — auto-generated from HAR`,
+      request: { method, header: headers, url: postmanUrl },
+      event: [
+        { listen: 'prerequest', script: { type: 'text/javascript', exec: PRE_REQUEST_SCRIPT } },
+        ...(testEvent ? [testEvent] : [])
+      ]
     };
 
     if (bodyObj) item.request.body = bodyObj;
+    if (responseEx) item.response = responseEx;
 
-    // Add to folder
-    if (!folderMap[folderName]) {
-      folderMap[folderName] = [];
-      folderOrder.push(folderName);
-    }
-    folderMap[folderName].push(item);
-
-    summaryRows.push({ index: reqIndex++, folder: folderName, method, path, desc });
+    if (!folderMap[folder]) { folderMap[folder] = []; folderOrder.push(folder); }
+    folderMap[folder].push(item);
+    summaryRows.push({ index: reqIndex++, folder, method, path, bodyType });
   }
 
-  setProgress(75, 'Assembling collection structure...');
+  setProgress(80, 'Assembling collection...');
   await tick();
 
-  // ── Build collection JSON
-  const today = new Date().toISOString().split('T')[0];
-  const domain = primaryBase.replace(/https?:\/\//, '').split('/')[0].split('.')[0];
   collectionFilename = `augmont-api-${domain}-${today}.postman_collection.json`;
-
-  const collectionItems = optFolders
-    ? folderOrder.map(name => ({ name, item: folderMap[name] }))
-    : (folderMap['All Requests'] || []);
+  envFilename = `augmont-${domain}-env-${today}.postman_environment.json`;
 
   const collection = {
     info: {
+      _postman_id: generateUUID(),
       name: `Augmont API — ${domain} — ${today}`,
       schema: 'https://schema.getpostman.com/json/collection/v2.1.0/collection.json'
     },
-    item: collectionItems,
+    ...(optNativeAuth ? { auth: { type: 'bearer', bearer: [{ key: 'token', value: '{{AUTH_TOKEN}}', type: 'string' }] } } : {}),
+    event: [{ listen: 'prerequest', script: { type: 'text/javascript', exec: COLLECTION_PRE_REQUEST } }],
+    item: optFolders
+      ? folderOrder.map(n => ({ name: n, description: `${n} endpoints — auto-generated from HAR`, item: folderMap[n] }))
+      : (folderMap['All'] || []),
     variable: [
-      { key: 'BASE_URL', value: primaryBase, type: 'default' },
-      { key: 'HMAC_SECRET', value: HMAC_SECRET, type: 'default' },
-      { key: 'AUTH_TOKEN', value: '', type: 'default' }
+      { key: 'BASE_URL',    value: primaryBase, type: 'default' },
+      { key: 'HMAC_SECRET', value: hmacSecret,  type: 'secret'  },
+      { key: 'AUTH_TOKEN',  value: '',          type: 'secret'  }
     ]
   };
 
-  setProgress(90, 'Finalizing...');
+  const environment = {
+    id: generateUUID(),
+    name: envName,
+    _postman_variable_scope: 'environment',
+    values: [
+      { key: 'BASE_URL',    value: primaryBase, type: 'default', enabled: true },
+      { key: 'AUTH_TOKEN',  value: '',          type: 'secret',  enabled: true },
+      { key: 'HMAC_SECRET', value: hmacSecret,  type: 'secret',  enabled: true }
+    ]
+  };
+
+  setProgress(100, `Done — ${filtered.length} requests, ${folderOrder.length} folder(s).`);
   await tick();
 
-  const json = JSON.stringify(collection, null, 2);
-  collectionBlob = new Blob([json], { type: 'application/json' });
+  collectionBlob = new Blob([JSON.stringify(collection, null, 2)], { type: 'application/json' });
+  envBlob        = new Blob([JSON.stringify(environment, null, 2)], { type: 'application/json' });
 
-  setProgress(100, `Done! ${filtered.length} requests across ${folderOrder.length} folder(s).`);
-  await tick();
-
-  // ── Render results
-  renderResults(summaryRows, folderOrder.length, filtered.length);
+  renderResults(summaryRows, folderOrder.length, filtered.length, withTests, withExamples, authEndpoints, envName);
   document.getElementById('generateBtn').disabled = false;
 }
 
-function renderResults(rows, folderCount, totalCount) {
-  // Stats
+function renderResults(rows, folderCount, total, withTests, withExamples, authEndpoints, envName) {
   const methods = {};
-  rows.forEach(r => { methods[r.method] = (methods[r.method] || 0) + 1; });
+  rows.forEach(r => { methods[r.method] = (methods[r.method]||0)+1; });
+
   let statsHtml = `
-    <div class="stat"><span class="stat-num">${totalCount}</span><span class="stat-label">Requests</span></div>
-    <div class="stat"><span class="stat-num">${folderCount}</span><span class="stat-label">Folders</span></div>
+    <div class="stat"><div class="stat-num">${total}</div><div class="stat-label">Requests</div></div>
+    <div class="stat"><div class="stat-num">${folderCount}</div><div class="stat-label">Folders</div></div>
+    <div class="stat"><div class="stat-num">${withTests}</div><div class="stat-label">Tests</div></div>
+    <div class="stat"><div class="stat-num">${withExamples}</div><div class="stat-label">Examples</div></div>
   `;
-  Object.entries(methods).forEach(([m, c]) => {
-    statsHtml += `<div class="stat"><span class="stat-num" style="font-size:20px;">${c}</span><span class="stat-label">${m}</span></div>`;
+  Object.entries(methods).forEach(([m,c]) => {
+    statsHtml += `<div class="stat"><div class="stat-num" style="font-size:18px;">${c}</div><div class="stat-label">${m}</div></div>`;
   });
   document.getElementById('statsRow').innerHTML = statsHtml;
 
-  // Context block
-  const folders = [...new Set(rows.map(r => r.folder))];
-  const methodList = Object.keys(methods).join(', ');
-  document.getElementById('contextBlock').innerHTML = `
-    <strong>📋 Collection Context</strong><br>
-    This collection contains <strong>${totalCount} API requests</strong> organised into <strong>${folderCount} feature folder(s)</strong>: ${folders.join(', ')}.<br>
-    Methods covered: ${methodList}. Set <strong>AUTH_TOKEN</strong> in collection variables after importing to authenticate requests.
-  `;
+  const folders = [...new Set(rows.map(r => r.folder))].join(', ');
+  const authNote = authEndpoints.length ? ` Token auto-capture on <strong>${authEndpoints.length}</strong> auth endpoint(s).` : '';
+  document.getElementById('contextBlock').innerHTML =
+    `<strong>${total} requests</strong> in <strong>${folderCount} folder(s)</strong>: ${folders}. Methods: ${Object.keys(methods).join(', ')}.${authNote} Set <strong>AUTH_TOKEN</strong> in the <em>${envName}</em> environment.`;
 
-  // Summary table
-  const tbody = document.getElementById('summaryBody');
-  tbody.innerHTML = rows.map(r => `
+  document.getElementById('summaryBody').innerHTML = rows.map(r => `
     <tr>
-      <td style="color:var(--muted);font-family:'JetBrains Mono',monospace;font-size:11px;">${r.index}</td>
-      <td><span class="folder-badge">${r.folder}</span></td>
-      <td><span class="method-badge method-${r.method}">${r.method}</span></td>
-      <td class="path-mono">${r.path}</td>
-      <td class="desc-text">${r.desc}</td>
+      <td style="color:#bbb;font-family:monospace;font-size:11px;">${r.index}</td>
+      <td><span class="badge folder-badge">${r.folder}</span></td>
+      <td><span class="badge m-${r.method}">${r.method}</span></td>
+      <td style="font-family:monospace;font-size:11px;color:#333;">${r.path}</td>
+      <td>${r.bodyType ? `<span class="badge body-badge">${r.bodyType}</span>` : `<span class="body-none">—</span>`}</td>
     </tr>
   `).join('');
 
-  // Download button
-  const btn = document.getElementById('downloadBtn');
-  btn.onclick = () => {
-    const a = document.createElement('a');
-    a.href = URL.createObjectURL(collectionBlob);
-    a.download = collectionFilename;
-    a.click();
-    setTimeout(() => URL.revokeObjectURL(a.href), 1000);
-  };
+  document.getElementById('downloadCollectionBtn').onclick = () => triggerDownload(collectionBlob, collectionFilename);
+  document.getElementById('downloadEnvBtn').onclick = () => triggerDownload(envBlob, envFilename);
+
+  document.getElementById('newmanCode').textContent =
+    `npm install -g newman\n\nnewman run "${collectionFilename}" \\\n  --environment "${envFilename}" \\\n  --reporters cli,junit \\\n  --reporter-junit-export results.xml`;
 
   document.getElementById('resultsCard').classList.add('visible');
   document.getElementById('resultsCard').scrollIntoView({ behavior: 'smooth', block: 'start' });
 }
 
-function tick() {
-  return new Promise(r => setTimeout(r, 60));
+function triggerDownload(blob, name) {
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = name; a.click();
+  setTimeout(() => URL.revokeObjectURL(a.href), 1000);
 }
 
-// ─── Checkbox styling ─────────────────────────────────────────────────────────
-document.querySelectorAll('.checkbox-label input[type="checkbox"]').forEach(cb => {
+function tick() { return new Promise(r => setTimeout(r, 60)); }
+
+// Checkbox check marks
+document.querySelectorAll('.opt-label input[type="checkbox"]').forEach(cb => {
   cb.addEventListener('change', function() {
-    const check = this.nextElementSibling;
-    check.textContent = this.checked ? '✓' : '';
+    this.nextElementSibling.textContent = this.checked ? '✓' : '';
+    if (this.id === 'optNativeAuth') {
+      document.getElementById('nativeAuthHint').classList.toggle('visible', this.checked);
+    }
   });
 });
 </script>
 </body>
 </html>
-```
